@@ -1,0 +1,2125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="An interactive circuits-lab page: see how breadboard holes connect, probe example LED circuits, and practise Ohm's law and the resistor color code.">
+<style>
+/* Base reset (the page's own styles below build on this) */
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Breadboard Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,600;1,600&family=Kalam:wght@400;700&display=swap">
+<style>
+:root{
+  --ground:#DAE2E5;
+  --grid:rgba(40,70,82,.07);
+  --surface:#F7F9FA;
+  --surface-2:#EAEFF1;
+  --ink:#152025;
+  --ink-2:#46555D;
+  --ink-3:#56656D;
+  --line:#C6D0D5;
+  --good:#17703E; --good-bg:#DDF1E5;
+  --bad:#B4322A; --bad-bg:#F8E1DE;
+  --focus:#1C5BC4;
+  --shadow:0 1px 2px rgba(20,35,45,.08),0 6px 20px rgba(20,35,45,.08);
+  /* On-board colors: the board is light plastic in both themes */
+  --pcb-plastic:#F8F8F4;
+  --pcb-edge:#D3D4CC;
+  --pcb-channel:#E6E7E0;
+  --pcb-print:#62686B;
+  --pcb-hole:#343A3E;
+  --pcb-plus:#D3263A;
+  --pcb-minus:#1F5CC8;
+  --pcb-hot:#C06A00;
+  --pcb-ring:#B45309;
+  --pcb-focus:#1C5BC4;
+  --pcb-hot-soft:rgba(240,150,20,.24);
+  --pcb-flow:#0891A8;
+  --metal:#C3CBD1; --metal-edge:#8E989F; --metal-mouth:#6F7980;
+  /* Worksheet tab: paper, blue ink, pencil */
+  --ws-paper:#FBFCFB; --ws-grid:rgba(70,120,190,.11); --ws-grid-major:rgba(70,120,190,.21);
+  --ws-ink:#1C3C8C; --ws-text:#232B33; --ws-pencil:#586068; --ws-rule:#9BB0D3; --ws-margin:#D9534F;
+  --ws-hi:rgba(255,222,50,.6); --ws-red:#C2410C; --ws-box:rgba(255,255,255,.78); --ws-good:#17703E; --ws-bad:#B4322A;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#11171A; --grid:rgba(160,200,215,.05);
+    --surface:#1A2226; --surface-2:#232D32;
+    --ink:#E3EAED; --ink-2:#A1B0B7; --ink-3:#7F8F97; --line:#2E3B42;
+    --good:#56C98A; --good-bg:rgba(86,201,138,.14);
+    --bad:#FF7A6E; --bad-bg:rgba(255,122,110,.12);
+    --focus:#86AEFF;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+    --pcb-plastic:#E9E9E3; --pcb-edge:#B9BAB2; --pcb-channel:#D8D9D1;
+    --ws-paper:#0E2645; --ws-grid:rgba(150,190,255,.08); --ws-grid-major:rgba(150,190,255,.16);
+    --ws-ink:#F2F6FB; --ws-text:#D8E3F1; --ws-pencil:#A3B7D0; --ws-rule:#4A6FA3; --ws-margin:#FF8A80;
+    --ws-hi:rgba(255,214,64,.3); --ws-red:#FFA27F; --ws-box:rgba(6,22,44,.62); --ws-good:#6BD69A; --ws-bad:#FF8A80;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#11171A; --grid:rgba(160,200,215,.05);
+  --surface:#1A2226; --surface-2:#232D32;
+  --ink:#E3EAED; --ink-2:#A1B0B7; --ink-3:#7F8F97; --line:#2E3B42;
+  --good:#56C98A; --good-bg:rgba(86,201,138,.14);
+  --bad:#FF7A6E; --bad-bg:rgba(255,122,110,.12);
+  --focus:#86AEFF;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  --pcb-plastic:#E9E9E3; --pcb-edge:#B9BAB2; --pcb-channel:#D8D9D1;
+  --ws-paper:#0E2645; --ws-grid:rgba(150,190,255,.08); --ws-grid-major:rgba(150,190,255,.16);
+  --ws-ink:#F2F6FB; --ws-text:#D8E3F1; --ws-pencil:#A3B7D0; --ws-rule:#4A6FA3; --ws-margin:#FF8A80;
+  --ws-hi:rgba(255,214,64,.3); --ws-red:#FFA27F; --ws-box:rgba(6,22,44,.62); --ws-good:#6BD69A; --ws-bad:#FF8A80;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background-color:var(--ground);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  color:var(--ink);
+  font:15px/1.55 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+.app{max-width:1500px;margin:0 auto;padding-inline:clamp(16px,2.5vw,32px);padding-block:20px 48px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px;margin-bottom:18px}
+.eyebrow{margin:0 0 4px;font:600 12px/1.2 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+b,strong{font-weight:600}
+h1{font-family:Archivo,"Arial Narrow",sans-serif;font-weight:800;font-size:clamp(26px,2.8vw,36px);line-height:1.05;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.sub{margin:6px 0 0;color:var(--ink-2);max-width:62ch}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{font:600 14px/1 "IBM Plex Sans",system-ui,sans-serif;padding:11px 18px;border:0;border-radius:7px;background:transparent;color:var(--ink-2);cursor:pointer}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-selected="true"]{background:var(--ink);color:var(--surface)}
+.seg button:focus-visible,.btn:focus-visible,.citem:focus-visible,.try:focus-visible,.linkbtn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:24px;align-items:start}
+.stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:12px;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
+.tog{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-weight:500;color:var(--ink-2);user-select:none}
+.tog input{appearance:none;-webkit-appearance:none;width:36px;height:21px;border-radius:999px;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--ink-3);position:relative;margin:0;cursor:pointer;transition:background .15s;flex:none}
+.tog input::after{content:"";position:absolute;top:2.5px;left:2.5px;width:16px;height:16px;border-radius:50%;background:var(--ink-3);transition:transform .15s}
+.tog input:checked{background:var(--ink);box-shadow:none}
+.tog input:checked::after{background:var(--surface)}
+.tog input:checked::after{transform:translateX(15px)}
+.tog input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.tog:hover{color:var(--ink)}
+.board-wrap{min-width:0}
+#board{display:block;width:100%;height:auto;max-height:max(280px,min(70vh,calc(100svh - 330px)));cursor:crosshair;touch-action:manipulation;outline:none;-webkit-tap-highlight-color:transparent}
+#board.portrait{max-height:none}
+#board:focus-visible{outline:2px solid var(--focus);outline-offset:4px;border-radius:8px}
+.probe{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;box-shadow:var(--shadow);min-height:136px}
+.probe p{margin:6px 0 0;max-width:72ch}
+.ph{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.pid{font:600 22px/1.2 "IBM Plex Mono",ui-monospace,monospace}
+.pt{font:700 19px/1.25 Archivo,sans-serif}
+.psub{color:var(--ink-3);font-size:14px}
+.chip{font:600 11px/1 "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:5px;background:var(--surface-2);color:var(--ink-2);align-self:center}
+.verdict{font:600 13px/1 "IBM Plex Sans",sans-serif;padding:5px 10px;border-radius:999px;align-self:center}
+.verdict.ok{background:var(--good-bg);color:var(--good)}
+.verdict.bad{background:var(--bad-bg);color:var(--bad)}
+.yes{color:var(--good);font-weight:600}
+.no{color:var(--bad);font-weight:600}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.94em}
+.note{color:var(--ink-2);font-style:italic}
+.meter{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-top:6px}
+.mv{font:600 30px/1.1 "IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mv.off{color:var(--ink-3)}
+.ml{color:var(--ink-2);font-size:14px}
+.linkbtn{background:none;border:0;padding:0;font:inherit;font-size:13px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;cursor:pointer;margin-left:auto;align-self:center}
+.linkbtn:hover{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:13px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend svg{background:var(--pcb-plastic);border-radius:4px;box-shadow:0 0 0 1px var(--pcb-edge)}
+.legend .lg-band{fill:var(--pcb-hot-soft);stroke:var(--pcb-hot)}
+.legend .lg-ring{fill:none;stroke:var(--pcb-ring)}
+.legend .lg-dash{fill:none;stroke:#4B5961}
+.legend .lg-flow{stroke:var(--pcb-flow)}
+.ptnote{margin:0;font-size:13px;color:var(--ink-2)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px 22px}
+.psec{display:flex;flex-direction:column;gap:12px}
+.psec p{margin:0}
+.lead{color:var(--ink)}
+.lbl{margin:10px 0 0;font:700 12px/1.2 Archivo,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.hint{font-size:13.5px;color:var(--ink-2)}
+.notice{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px}
+.notice li::marker{color:var(--ink-3)}
+.tries{display:flex;flex-wrap:wrap;gap:8px}
+.try{font:500 13.5px/1.2 "IBM Plex Sans",sans-serif;padding:8px 11px;border-radius:8px;border:1px solid var(--ink-3);background:var(--surface-2);color:var(--ink);cursor:pointer;text-align:left}
+.try:hover{border-color:var(--ink-3)}
+.kbd{font-size:13px;color:var(--ink-3)}
+.clist{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.citem{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:11px 10px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font:500 15px/1.3 "IBM Plex Sans",sans-serif;text-align:left;cursor:pointer}
+.citem:hover{background:var(--surface-2)}
+.citem[aria-pressed="true"]{background:var(--surface-2);font-weight:600;box-shadow:inset 3px 0 0 var(--ink)}
+.tag{font:600 11px/1 "IBM Plex Mono",monospace;letter-spacing:.05em;text-transform:uppercase;padding:4px 7px;border-radius:5px;flex:none}
+.tag.works{background:var(--good-bg);color:var(--good)}
+.tag.mistake{background:var(--bad-bg);color:var(--bad)}
+.cdetail{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.ctitle{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ctitle h3{margin:0;font:700 21px/1.2 Archivo,sans-serif;text-wrap:balance}
+.why{display:flex;flex-direction:column;gap:8px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:600 14px/1 "IBM Plex Sans",sans-serif;padding:10px 14px;border-radius:8px;border:1px solid var(--ink-3);background:var(--surface-2);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.btn.primary:hover{filter:brightness(1.15)}
+.fixnote{color:var(--good);font-weight:500}
+.status{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.status li{display:grid;grid-template-columns:12px 1fr;gap:10px;align-items:baseline;font-size:14.5px}
+.status .dot{width:10px;height:10px;border-radius:50%;background:var(--ink-3);transform:translateY(1px)}
+.status .good .dot{background:var(--good)}
+.status .bad .dot{background:var(--bad)}
+.status b{font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+@media (max-width:1180px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .stage{position:static}
+  .probe{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:2;min-height:0;max-height:38svh;overflow:auto}
+}
+@media (min-width:1181px) and (max-height:820px){
+  .sub{display:none}
+  .top{margin-bottom:10px}
+}
+/* ---------- board ---------- */
+.pcb{fill:var(--pcb-plastic);stroke:var(--pcb-edge);stroke-width:1.5}
+#board.xray .pcb{fill:#EEF0EC}
+.pcb-channel{fill:var(--pcb-channel)}
+#board.xray .pcb-channel{fill-opacity:.5}
+.pcb-groove{stroke:var(--pcb-edge);stroke-width:1}
+.stripe{stroke-width:2.4;stroke-linecap:round}
+.stripe.plus{stroke:var(--pcb-plus)}
+.stripe.minus{stroke:var(--pcb-minus)}
+.print{font:500 11px "IBM Plex Mono",ui-monospace,monospace;fill:var(--pcb-print);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.print.num{font-size:10.5px}
+#board.portrait .print{font-size:12px}
+#board.portrait .print.num{font-size:11.5px}
+#board.portrait .print.sign{font-size:16px}
+.print.sign{font-size:15px;font-weight:600}
+.print.plus{fill:var(--pcb-plus)}
+.print.minus{fill:var(--pcb-minus)}
+.hole{fill:var(--pcb-hole)}
+#board.xray .hole{fill:none;stroke:var(--pcb-hole);stroke-width:1;stroke-opacity:.55}
+.L-metal{display:none}
+#board.xray .L-metal{display:inline}
+.metal{fill:var(--metal);stroke:var(--metal-edge);stroke-width:1}
+.metal.hot{fill:#F5B64A;stroke:var(--pcb-hot)}
+.metal.hot2{fill:#DCE3E8;stroke:#56636B;stroke-dasharray:3 2}
+.metal-mouth{fill:var(--metal-mouth)}
+.band{fill:var(--pcb-hot-soft);stroke:var(--pcb-hot);stroke-width:1.6}
+.band.band-2{fill:rgba(40,60,70,.06);stroke:#4B5961;stroke-width:1.4;stroke-dasharray:4 3}
+.ring-pin{fill:none;stroke:var(--pcb-ring);stroke-width:2.8}
+.ring-hover{fill:none;stroke:#1D272C;stroke-width:1.6}
+.ring-cursor{fill:none;stroke:var(--pcb-focus);stroke-width:2.2;stroke-dasharray:3 2}
+.L-hl,.L-glow,.L-flow,.L-marks{pointer-events:none}
+.leg{stroke:#9CA5AB;stroke-width:2.4;stroke-linecap:round}
+.leg-end{fill:#AEB6BB}
+.res-body{fill:#DCC196;stroke:#A68A5E;stroke-width:1}
+.wire-outline{fill:none;stroke:rgba(0,0,0,.38);stroke-width:7.6;stroke-linecap:round}
+.wire{fill:none;stroke-width:5.4;stroke-linecap:round}
+.wire-shine{fill:none;stroke:rgba(255,255,255,.26);stroke-width:1.4;stroke-linecap:round}
+.wire-end{fill:#CDD3D7;stroke:#7D868C;stroke-width:.8}
+.led-rim{stroke:rgba(60,0,0,.45);stroke-width:1}
+.led-spec{fill:#fff;opacity:.45}
+.led-plus{font:600 10px "IBM Plex Mono",monospace;fill:#8A1C24;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.sw-body{fill:#2A3340;stroke:#161C24;stroke-width:1}
+.sw-track{fill:#12171D}
+.sw-knob{fill:#E6EAED;stroke:#9AA3AA;stroke-width:.8}
+.sw-ridge{stroke:#9AA3AA;stroke-width:1}
+.sw-knob-g{transition:transform .18s ease}
+.part[data-kind="sw"]{cursor:pointer}
+.bat-body{fill:#2B3036}
+.bat-cap{fill:#B7BEC4}
+.bat-label{fill:#3A424A}
+.bat-volt{font:700 26px Archivo,sans-serif;fill:#F3F5F6;text-anchor:middle;dominant-baseline:central}
+.bat-word{font:600 8px "IBM Plex Mono",monospace;letter-spacing:.2em;fill:#AEB7BE;text-anchor:middle;dominant-baseline:central}
+.bat-term{fill:#D5DADE;stroke:#7F888E;stroke-width:1}
+.bat-sign{font:600 11px "IBM Plex Mono",monospace;fill:#2B3036;text-anchor:middle;dominant-baseline:central}
+.flow-halo{fill:none;stroke:#fff;stroke-opacity:.9;stroke-width:6.8;stroke-linecap:round;stroke-dasharray:0 10;animation:flow 1s linear infinite}
+.flow{fill:none;stroke:var(--pcb-flow);stroke-width:4.6;stroke-linecap:round;stroke-dasharray:0 10;animation:flow 1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-10px}}
+@media (prefers-reduced-motion:reduce){
+  .flow,.flow-halo{animation:none}
+  .sw-knob-g,.tog input,.tog input::after{transition:none}
+}
+/* ---------- Worksheet tab ---------- */
+body.ws-mode{
+  background-color:var(--ws-paper);
+  background-image:linear-gradient(var(--ws-grid-major) 1px,transparent 1px),linear-gradient(90deg,var(--ws-grid-major) 1px,transparent 1px),
+                   linear-gradient(var(--ws-grid) 1px,transparent 1px),linear-gradient(90deg,var(--ws-grid) 1px,transparent 1px);
+  background-size:100px 100px,100px 100px,20px 20px,20px 20px;
+  color:var(--ws-text);
+}
+body.ws-mode .eyebrow,body.ws-mode .sub{color:var(--ws-pencil)}
+body.ws-mode h1{color:var(--ws-ink)}
+body.ws-mode .seg{background:var(--ws-box);border-color:var(--ws-rule)}
+body.ws-mode .seg button{color:var(--ws-pencil)}
+body.ws-mode .seg button:hover{color:var(--ws-ink)}
+body.ws-mode .seg button[aria-selected="true"]{background:var(--ws-ink);color:var(--ws-paper)}
+.ws-sheet{border-left:2px solid var(--ws-margin);padding-left:clamp(16px,3vw,40px);display:flex;flex-direction:column;gap:44px;max-width:1240px}
+.ws-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px 32px;border-bottom:2px solid var(--ws-ink);padding-bottom:12px}
+.ws-kicker{margin:0 0 4px;font:600 12px/1.2 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--ws-pencil)}
+.ws-title{margin:0;font:600 clamp(24px,3vw,34px)/1.15 "IBM Plex Serif",Georgia,serif;color:var(--ws-ink);text-wrap:balance}
+.ws-name{display:flex;flex-wrap:wrap;gap:10px 24px;color:var(--ws-pencil);font-size:14px}
+.ws-name span{display:inline-flex;align-items:flex-end;gap:8px}
+.ws-name i{display:inline-block;width:13ch;border-bottom:1.5px solid var(--ws-pencil);height:1.1em}
+.ws-part{display:flex;flex-direction:column;gap:18px}
+.ws-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin:0;padding-bottom:6px;border-bottom:1.5px solid var(--ws-rule);font:600 clamp(21px,2.3vw,27px)/1.2 "IBM Plex Serif",Georgia,serif;color:var(--ws-ink)}
+.ws-no{font:600 12px/1 "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--ws-pencil)}
+.ws-intro{margin:0;max-width:72ch}
+.ws-label{display:block;margin:0 0 8px;font:600 12px/1.25 "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--ws-pencil)}
+.ws-box{border:1.5px solid var(--ws-ink);border-radius:3px;background:var(--ws-box);padding:16px 18px;min-width:0}
+.ws-box :where(p){margin:0}
+.ws-cap{margin:8px 0 0;font-size:14px;color:var(--ws-pencil)}
+.hand{font-family:Kalam,"Segoe Print","Bradley Hand","Comic Sans MS",cursive}
+.hl{background:linear-gradient(transparent 50%,var(--ws-hi) 50%,var(--ws-hi) 94%,transparent 94%);padding:0 4px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.ws-btn{font:600 14px/1 "IBM Plex Sans",system-ui,sans-serif;padding:10px 14px;border:1.5px solid var(--ws-ink);border-radius:4px;background:transparent;color:var(--ws-ink);cursor:pointer}
+.ws-btn:hover{background:var(--ws-box)}
+.ws-btn.primary{background:var(--ws-ink);color:var(--ws-paper)}
+.ws-btn.primary:hover{filter:brightness(1.18)}
+.ws-seg{display:inline-flex;flex-wrap:wrap;gap:6px}
+.ws-seg button{font:600 14px/1 "IBM Plex Sans",system-ui,sans-serif;padding:9px 14px;border:1.5px solid var(--ws-ink);border-radius:999px;background:transparent;color:var(--ws-ink);cursor:pointer}
+.ws-seg button[aria-pressed="true"]{background:var(--ws-ink);color:var(--ws-paper)}
+.ws-btn:focus-visible,.ws-seg button:focus-visible,.oh-in:focus-visible,.cc-sw:focus-visible,.qz-opt:focus-visible,.oh-prob button:focus-visible{outline:2px solid var(--ws-ink);outline-offset:2px}
+/* Part A: Ohm's law */
+.oh-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:28px 44px;align-items:start}
+.oh-left,.oh-right{display:flex;flex-direction:column;gap:20px;min-width:0}
+.oh-schem{display:block;width:100%;max-width:520px;height:auto;margin-inline:auto}
+.oh-wire{fill:none;stroke:var(--ws-ink);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.oh-plate{stroke:var(--ws-ink);stroke-linecap:round}
+.oh-meter{fill:var(--ws-paper);stroke:var(--ws-ink);stroke-width:2.6}
+.oh-sym{font:600 22px "IBM Plex Serif",Georgia,serif;fill:var(--ws-ink);text-anchor:middle;dominant-baseline:central}
+.oh-lab{font:400 21px Kalam,"Segoe Print","Bradley Hand","Comic Sans MS",cursive;fill:var(--ws-ink);dominant-baseline:central}
+.oh-lab.small{font-size:19px;fill:var(--ws-pencil)}
+.oh-hl{fill:var(--ws-hi)}
+.oh-flow{fill:none;stroke:var(--ws-red);stroke-linecap:round;stroke-dasharray:10 9;animation:ohflow 1s linear infinite}
+.oh-arrow{fill:var(--ws-red)}
+@keyframes ohflow{to{stroke-dashoffset:-19px}}
+.oh-probs{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px}
+.oh-prob{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.oh-prob span{flex:1 1 30ch;min-width:0}
+.oh-prob button{font:600 13px/1 "IBM Plex Sans",sans-serif;padding:7px 11px;border:1.5px solid var(--ws-ink);border-radius:4px;background:transparent;color:var(--ws-ink);cursor:pointer}
+.oh-prob button:hover{background:var(--ws-box)}
+.oh-find{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.oh-tri-row{display:grid;grid-template-columns:minmax(150px,210px) minmax(0,1fr);gap:18px;align-items:center}
+.oh-tri{display:block;width:100%;height:auto}
+.oh-tri .reg{fill:transparent;cursor:pointer;outline:none}
+.oh-tri .reg:hover{fill:var(--ws-hi)}
+.oh-tri .reg.on{fill:url(#ohHatch)}
+.oh-tri .reg:focus-visible{stroke:var(--ws-red);stroke-width:8;stroke-linejoin:round}
+.oh-tri .reg:not(.on):focus-visible{fill:var(--ws-hi)}
+.oh-tri .edge{fill:none;stroke:var(--ws-ink);stroke-width:2.6;stroke-linejoin:round;pointer-events:none}
+.oh-tri .hatch{stroke:var(--ws-pencil);stroke-width:2}
+.oh-tri text{font:600 italic 42px "IBM Plex Serif",Georgia,serif;fill:var(--ws-ink);text-anchor:middle;dominant-baseline:central;pointer-events:none;paint-order:stroke;stroke:var(--ws-paper);stroke-width:6px;stroke-linejoin:round}
+.oh-tri .times-bg{fill:var(--ws-paper);stroke:var(--ws-ink);stroke-width:1.5;pointer-events:none}
+.oh-tri text.times{font:400 20px "IBM Plex Sans",sans-serif;font-style:normal;stroke:none}
+.oh-cover{margin:0;font-size:17px;line-height:1.5}
+.oh-cover .hand{font-size:24px;color:var(--ws-ink)}
+.oh-rows{display:flex;flex-direction:column}
+.oh-row{display:grid;grid-template-columns:42px minmax(0,1fr);gap:6px 12px;align-items:center;padding:12px 0;border-bottom:1px dashed var(--ws-rule)}
+.oh-row:first-child{border-top:1px dashed var(--ws-rule)}
+.oh-sym-l{grid-row:span 2;font:600 italic 32px/1 "IBM Plex Serif",Georgia,serif;color:var(--ws-ink);text-align:center}
+.oh-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+.oh-name{font-size:14px;color:var(--ws-pencil)}
+.oh-in{font:500 17px/1.2 "IBM Plex Mono",ui-monospace,monospace;width:11ch;max-width:100%;padding:7px 9px;border:1.5px solid var(--ws-pencil);border-radius:3px;background:var(--ws-paper);color:var(--ws-text)}
+.oh-in[aria-invalid="true"]{border-color:var(--ws-bad)}
+.oh-row.unknown .oh-in{border:1.5px dashed var(--ws-ink);background:var(--ws-hi);color:var(--ws-ink);font-weight:600}
+.oh-tag{font:600 11px/1 "IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--ws-ink)}
+.oh-range{width:100%;margin:0;accent-color:var(--ws-ink)}
+.oh-range:disabled{opacity:.35}
+.oh-err{grid-column:2;margin:0;font-size:13px;color:var(--ws-bad)}
+.oh-work{display:flex;flex-direction:column;gap:2px;font-size:23px;line-height:1.45;color:var(--ws-ink)}
+.oh-work .wl-note{font-size:17px;color:var(--ws-pencil)}
+.oh-work .wl-conv{font-size:19px;color:var(--ws-pencil)}
+.oh-work .wl-warn{font-size:17px;color:var(--ws-red)}
+/* Part B: color code */
+.cc-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px}
+.cc-tip{margin:0;font-size:14px;color:var(--ws-pencil);max-width:60ch}
+.res-svg{display:block;width:100%;max-width:660px;height:auto;margin-inline:auto;overflow:visible}
+.res-lead{stroke:#A0A8AE;stroke-width:6;stroke-linecap:round}
+.res-body4{fill:#E0C497}
+.res-body5{fill:#8CB4D9}
+.res-outline{fill:none;stroke:rgba(0,0,0,.4);stroke-width:1.5}
+.cc-sel{fill:none;stroke:var(--ws-ink);stroke-width:2.2;stroke-dasharray:5 4;filter:drop-shadow(0 0 1px rgba(0,0,0,.85))}
+.cc-caret{fill:var(--ws-ink)}
+.cc-hit{fill:transparent;cursor:pointer;outline:none}
+.cc-hit:hover{fill:rgba(120,140,190,.14)}
+.cc-hit:focus-visible{stroke:var(--ws-ink);stroke-width:2.5}
+.cc-num{font:600 20px "IBM Plex Mono",monospace;fill:var(--ws-pencil);text-anchor:middle}
+.cc-pal{display:flex;flex-direction:column;gap:8px}
+.cc-sws{display:flex;flex-wrap:wrap;gap:8px}
+.cc-sw{display:inline-flex;align-items:center;gap:8px;padding:5px 10px 5px 5px;border:1.5px solid var(--ws-rule);border-radius:5px;background:var(--ws-box);color:var(--ws-text);font:500 14px/1 "IBM Plex Sans",sans-serif;cursor:pointer}
+.cc-sw:hover{border-color:var(--ws-ink)}
+.cc-sw[aria-pressed="true"]{border-color:var(--ws-ink);box-shadow:0 0 0 1.5px var(--ws-ink)}
+.cc-swc{width:22px;height:22px;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35),0 0 0 1px var(--ws-rule);flex:none}
+.cc-sw b{font:600 13px/1 "IBM Plex Mono",monospace;color:var(--ws-ink)}
+.cc-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px 28px;align-items:start}
+.cc-big{font-size:clamp(30px,4vw,40px);line-height:1.2;color:var(--ws-ink)}
+.cc-work{font-size:22px;color:var(--ws-ink);margin-top:4px}
+.cc-read p+p{margin-top:8px}
+.cc-std{font-weight:500}
+.cc-std.ok{color:var(--ws-good)}
+.cc-std.no{color:var(--ws-red)}
+.cc-inrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.cc-msg{min-height:1.5em;font-size:14px;margin-top:8px}
+.cc-msg.warn{color:var(--ws-red)}
+.cc-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+/* Part C: practice */
+.qz-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px}
+.qz-score{font:500 15px "IBM Plex Mono",monospace;color:var(--ws-pencil)}
+.qz-q{margin:0;font:600 19px/1.3 "IBM Plex Serif",Georgia,serif;color:var(--ws-ink)}
+.qz-opts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.qz-opt{font:600 20px/1.2 "IBM Plex Mono",ui-monospace,monospace;padding:14px 10px;border:1.5px solid var(--ws-ink);border-radius:4px;background:var(--ws-box);color:var(--ws-ink);cursor:pointer}
+.qz-opt:hover:not(:disabled){background:var(--ws-hi)}
+.qz-opt:disabled{cursor:default}
+.qz-opt.right{border-color:var(--ws-good);color:var(--ws-good);box-shadow:inset 0 0 0 2px var(--ws-good)}
+.qz-opt.wrong{border-color:var(--ws-bad);color:var(--ws-bad);text-decoration:line-through}
+.qz-fb{min-height:3.2em}
+.qz-fb p{margin:0}
+.qz-fb .res{font-weight:600}
+.qz-fb .res.ok{color:var(--ws-good)}
+.qz-fb .res.no{color:var(--ws-bad)}
+.qz-fb .hand{font-size:21px;color:var(--ws-ink)}
+@media (max-width:900px){
+  .oh-grid,.cc-grid{grid-template-columns:minmax(0,1fr)}
+  .qz-opts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:420px){
+  .oh-tri-row{grid-template-columns:minmax(0,1fr)}
+  .oh-tri{max-width:200px}
+}
+@media (prefers-reduced-motion:reduce){ .oh-flow{animation:none} }
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media (max-width:560px){
+  .seg{display:flex;width:100%}
+  .seg button{flex:1 1 auto;padding:10px 8px;line-height:1.2;text-align:center}
+  .tab-more{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <p class="eyebrow" id="appEyebrow">Circuits lab · Solderless breadboard</p>
+      <h1>Breadboard Explorer</h1>
+      <p class="sub" id="appSub">Find out which holes are connected inside the board, then see what that means for a working circuit.</p>
+    </div>
+    <div class="seg" role="tablist" aria-label="Mode">
+      <button type="button" role="tab" id="tabExplore" aria-selected="true" aria-controls="explorePanel">Connections</button>
+      <button type="button" role="tab" id="tabCircuits" aria-selected="false" aria-controls="circuitsPanel" tabindex="-1">Circuits</button>
+      <button type="button" role="tab" id="tabOhm" aria-selected="false" aria-controls="ohmPage" tabindex="-1" aria-label="Ohm's law and color code">Ohm's law<span class="tab-more"> &amp; color code</span></button>
+    </div>
+  </header>
+
+  <div class="layout" id="bbLayout">
+    <section class="stage" aria-label="Breadboard">
+      <div class="toolbar">
+        <label class="tog"><input type="checkbox" id="optXray" autocomplete="off"><span>See inside the board</span></label>
+        <label class="tog"><input type="checkbox" id="optSplit" autocomplete="off"><span>Split power rails</span></label>
+        <label class="tog" id="flowTog" hidden><input type="checkbox" id="optFlow" checked autocomplete="off"><span>Show current flow</span></label>
+      </div>
+      <p class="ptnote" id="ptNote" hidden>The board is turned sideways to fit your screen: its top edge (the + and − rails above row a) is on the right, and column 1 is at the top.</p>
+      <div class="board-wrap" id="boardWrap">
+        <svg id="board" xmlns="http://www.w3.org/2000/svg" tabindex="0" role="application" aria-roledescription="breadboard" aria-label="Interactive breadboard. Use the arrow keys to move between holes, Enter to pin a hole, Escape to clear." aria-describedby="probe"></svg>
+      </div>
+      <div class="probe" id="probe" aria-live="polite"></div>
+      <div class="legend" aria-hidden="true">
+        <span><svg width="26" height="14" viewBox="0 0 26 14"><rect class="lg-band" x="1.5" y="2" width="23" height="10" rx="5" stroke-width="1.5"/></svg>Connected holes</span>
+        <span><svg width="14" height="14" viewBox="0 0 14 14"><circle class="lg-ring" cx="7" cy="7" r="4.6" stroke-width="2.2"/></svg>Pinned hole</span>
+        <span><svg width="26" height="14" viewBox="0 0 26 14"><rect class="lg-dash" x="1.5" y="2" width="23" height="10" rx="5" stroke-width="1.4" stroke-dasharray="4 3"/></svg>Hole you're comparing</span>
+        <span id="lgFlow" hidden><svg width="32" height="14" viewBox="0 0 32 14"><line class="lg-flow" x1="4" y1="7" x2="28" y2="7" stroke-width="4.6" stroke-linecap="round" stroke-dasharray="0 8"/></svg>Current, flowing from + to −</span>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <section id="explorePanel" class="psec" role="tabpanel" aria-labelledby="tabExplore">
+        <p class="lead">Point at any hole to light up every hole it's connected to. Click (or tap) a hole to pin it, then point at another hole to check whether the two are connected.</p>
+        <h2 class="lbl">Check a pair</h2>
+        <p class="hint">Ask the class first, then click to reveal the answer.</p>
+        <div class="tries" id="tries"></div>
+        <h2 class="lbl">What to notice</h2>
+        <ul class="notice">
+          <li>Each numbered column holds <b>two separate strips</b> of five holes: a–e and f–j.</li>
+          <li>The <b>center gap</b> splits every column. Chips sit across it so each pin gets its own strip.</li>
+          <li>Holes in the same lettered row, like a5 and a6, are <b>not</b> connected.</li>
+          <li>The <b>power rails</b> run the long way along the edges: red for +, blue for −.</li>
+          <li>The top and bottom rails are <b>separate</b>. When you need power on both, join them with jumper wires: + to +, − to −.</li>
+          <li>Some boards break each rail partway along. Turn on <b>Split power rails</b> to see one.</li>
+        </ul>
+        <p class="kbd">Keyboard: Tab to the board, move with the arrow keys, press Enter to pin a hole and Esc to clear it. Turn on <b>See inside the board</b> to show the metal strips under the plastic.</p>
+      </section>
+
+      <section id="circuitsPanel" class="psec" role="tabpanel" aria-labelledby="tabCircuits" hidden>
+        <p class="lead">Point at an empty hole to read its voltage, measured from the battery's − terminal. Point at a part to see the current through it. Pin one hole, then point at another to measure between the two.</p>
+        <h2 class="lbl" id="clistLbl">Example circuits</h2>
+        <div class="clist" id="clist" role="group" aria-labelledby="clistLbl"></div>
+        <div class="cdetail">
+          <div class="ctitle"><h3 id="cName"></h3><span class="tag" id="cTag"></span></div>
+          <div class="why" id="cWhy"></div>
+          <div class="actions">
+            <button type="button" class="btn primary" id="fixBtn"></button>
+            <button type="button" class="btn" id="swBtn"></button>
+          </div>
+          <p class="fixnote" id="fixNote" hidden></p>
+          <h2 class="lbl">What the board is doing</h2>
+          <ul class="status" id="cStatus"></ul>
+        </div>
+      </section>
+    </aside>
+  </div>
+  <section id="ohmPage" class="ws" role="tabpanel" aria-labelledby="tabOhm" hidden>
+    <div class="ws-sheet">
+      <div class="ws-head">
+        <div>
+          <p class="ws-kicker">Circuits lab · Worksheet</p>
+          <h2 class="ws-title">Ohm's law and the resistor color code</h2>
+        </div>
+        <div class="ws-name" aria-hidden="true"><span>Name <i></i></span><span>Date <i></i></span></div>
+      </div>
+
+      <section class="ws-part" id="partA" aria-labelledby="partAh">
+        <h2 class="ws-h" id="partAh"><span class="ws-no">Part A</span>Ohm's law</h2>
+        <p class="ws-intro">Voltage pushes current through a resistance. Ohm's law ties the three together: <b>V = I × R</b>. Pick the quantity you want to find, set the other two, and follow the working.</p>
+        <div class="oh-grid">
+          <div class="oh-left">
+            <div class="ws-box">
+              <p class="ws-label">The circuit</p>
+              <svg class="oh-schem" id="ohSchem" viewBox="0 0 420 250" role="img" aria-labelledby="ohSchemDesc"></svg>
+              <p class="ws-cap" id="ohSchemDesc">A battery (V) drives current (I) through a resistor (R). The ammeter (A) is connected in series, so all of the current passes through it. Thicker red arrows mean more current.</p>
+            </div>
+            <div>
+              <p class="ws-label">Problems to try</p>
+              <p class="ws-cap" style="margin:0 0 10px">Ask the class first, then load a problem to check the answer.</p>
+              <ol class="oh-probs" id="ohProbs"></ol>
+            </div>
+          </div>
+          <div class="oh-right">
+            <div class="oh-find">
+              <span class="ws-label" style="margin:0" id="ohFindLbl">Find</span>
+              <div class="ws-seg" role="group" aria-labelledby="ohFindLbl" id="ohFind"></div>
+            </div>
+            <div class="oh-tri-row">
+              <svg class="oh-tri" id="ohTri" viewBox="0 0 240 212" role="group" aria-label="Ohm's law triangle. Choose the quantity to find."></svg>
+              <p class="oh-cover" id="ohCover"></p>
+            </div>
+            <div class="oh-rows" id="ohRows"></div>
+            <div class="ws-box">
+              <p class="ws-label">Working</p>
+              <div class="oh-work hand" id="ohWork"></div>
+              <p class="sr-only" id="ohLive" aria-live="polite" aria-atomic="true"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ws-part" id="partB" aria-labelledby="partBh">
+        <h2 class="ws-h" id="partBh"><span class="ws-no">Part B</span>The resistor color code</h2>
+        <div class="cc-top">
+          <p class="cc-tip">Hold the resistor so the bands bunched together are on the left. The tolerance band sits a little apart on the right: usually gold or silver on 4-band resistors, and brown or red on 5-band ones. Read from left to right. Click a band to change its color.</p>
+          <div class="ws-seg" role="group" aria-label="Number of bands" id="ccN"></div>
+        </div>
+        <div id="ccRes"></div>
+        <div class="cc-pal" id="ccPal"></div>
+        <div class="cc-grid">
+          <div class="ws-box cc-read" id="ccRead"></div>
+          <p class="sr-only" id="ccLive" aria-live="polite" aria-atomic="true"></p>
+          <div class="ws-box">
+            <label class="ws-label" for="ccIn">Or type a value to see its bands</label>
+            <div class="cc-inrow">
+              <input id="ccIn" class="oh-in" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" value="470 Ω" aria-describedby="ccMsg">
+            </div>
+            <p class="cc-msg" id="ccMsg" aria-live="polite">Try 4.7k, 220, 1M or 4k7.</p>
+            <div class="cc-actions">
+              <button type="button" class="ws-btn" id="cc5" hidden>Switch to 5 bands</button>
+              <button type="button" class="ws-btn primary" id="ccUse">Use this resistor in Part A</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ws-part" id="partC" aria-labelledby="partCh">
+        <h2 class="ws-h" id="partCh"><span class="ws-no">Part C</span>Practice: read the resistor</h2>
+        <div class="qz-bar">
+          <div class="ws-seg" role="group" aria-label="Resistors in the quiz" id="qzKind"></div>
+          <span class="qz-score" id="qzScore" aria-live="polite"></span>
+        </div>
+        <div id="qzRes"></div>
+        <p class="qz-q">What is this resistor's value?</p>
+        <div class="qz-opts" id="qzOpts"></div>
+        <div class="qz-fb" id="qzFb" aria-live="polite"></div>
+        <div><button type="button" class="ws-btn primary" id="qzNext">Next resistor</button></div>
+      </section>
+    </div>
+  </section>
+</div>
+<script>
+(() => {
+'use strict';
+
+/* ---------- Board geometry (board units: P = one 0.1" hole pitch) ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+const P = 20;
+const COLS = 30;
+const RAIL_COLS = [2,3,4,5,6,8,9,10,11,12,14,15,16,17,18,20,21,22,23,24,26,27,28,29,30];
+const SPLIT_GAP = 13;            // on split boards, rails break at the gap under column 13
+const TERM_ROWS = ['a','b','c','d','e','f','g','h','i','j'];
+const ROW_ORDER = ['tp','tn','a','b','c','d','e','f','g','h','i','j','bn','bp'];
+const ROW_Y = {tp:1, tn:2, a:3.9, b:4.9, c:5.9, d:6.9, e:7.9, f:10.9, g:11.9, h:12.9, i:13.9, j:14.9, bn:16.8, bp:17.8};
+const RAIL = {
+  tp:{sign:'+', edge:'top'},    tn:{sign:'−', edge:'top'},
+  bn:{sign:'−', edge:'bottom'}, bp:{sign:'+', edge:'bottom'}
+};
+const BW = 33 * P, BH = 18.8 * P;
+const VB = {x:-7.2 * P, y:-1.3 * P, w:41 * P, h:21.2 * P};
+const colX = c => (c + 1) * P;
+const isTop = row => 'abcde'.includes(row);
+
+const HOLES = [];
+const HOLE = new Map();
+function addHole(row, col) {
+  const h = {id:row + col, row, col, rail:row.length === 2, x:colX(col), y:ROW_Y[row] * P};
+  HOLES.push(h); HOLE.set(h.id, h);
+}
+for (const r of ['tp','tn','bn','bp']) for (const c of RAIL_COLS) addHole(r, c);
+for (const r of TERM_ROWS) for (let c = 1; c <= COLS; c++) addHole(r, c);
+
+function stripOf(id, split = state.split) {
+  const h = HOLE.get(id);
+  if (h.rail) return split ? `${h.row}-${h.col < SPLIT_GAP ? 'L' : 'R'}` : h.row;
+  return `c${h.col}${isTop(h.row) ? 'T' : 'B'}`;
+}
+const STRIPS = [false, true].map(split => {
+  const m = new Map();
+  for (const h of HOLES) {
+    const s = stripOf(h.id, split);
+    if (!m.has(s)) m.set(s, []);
+    m.get(s).push(h.id);
+  }
+  return m;
+});
+const stripHoles = s => STRIPS[state.split ? 1 : 0].get(s) || [];
+const axisPos = id => { const h = HOLE.get(id); return h.rail ? h.col : ROW_ORDER.indexOf(h.row); };
+
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const mono = s => `<span class="mono">${s}</span>`;
+function stripDesc(s) {
+  const m = /^c(\d+)([TB])$/.exec(s);
+  if (m) return `column ${m[1]}, ${m[2] === 'T' ? 'top half (a–e)' : 'bottom half (f–j)'}`;
+  const [r, half] = s.split('-');
+  const info = RAIL[r];
+  if (!info) return s;
+  return `the ${info.edge} ${info.sign} rail${half ? (half === 'L' ? ' (left section)' : ' (right section)') : ''}`;
+}
+function holeShort(id) {
+  const h = HOLE.get(id);
+  return h.rail ? `${RAIL[h.row].edge} ${RAIL[h.row].sign} rail · ${h.col}` : id;
+}
+
+/* ---------- Parts and example circuits ---------- */
+const W = (id, a, b, color, bow) => ({t:'wire', id, a, b, color, bow});
+const R = (id, ohms, a, b, label) => ({t:'res', id, ohms, a, b, label});
+const D = (id, a, k, label) => ({t:'led', id, a, k, label});
+const S = (id, p) => ({t:'sw', id, p});
+const BAT = {t:'bat', id:'bat', v:9, plus:'tp2', minus:'tn2'};
+const WIRE_COLORS = {red:'#D3312A', black:'#26292C'};
+
+const CIRCUITS = [
+  {id:'switch', name:'LED with a switch', tag:'works',
+    parts:[BAT, W('w1','tp4','a4','red'), S('s1',['b4','b5','b6']), R('r1',470,'e5','e9'), D('d1','c9','c10'), W('w2','a10','tn10','black',-0.6)],
+    why:`<p>Current leaves the battery's + terminal, runs along the top + rail and down the red wire into column 4. The switch joins column 4 to column 5. The 470 Ω resistor carries the current on to column 9, where the LED's long leg sits. From the LED's short leg in column 10, the black wire takes it back to the − rail and the battery.</p>
+         <p>The resistor holds the current to about 15 mA; without it, the LED would burn out. Slide the switch to OFF and the loop is broken, so nothing flows anywhere.</p>`},
+  {id:'series', name:'Two LEDs in series', tag:'works',
+    parts:[BAT, W('w1','tp4','a4','red'), R('r1',470,'e4','e8'), D('d1','c8','c9','LED 1'), D('d2','e9','e10','LED 2'), W('w2','a10','tn10','black',-0.6)],
+    why:`<p>The two LEDs sit one after the other in a single loop. Column 9 joins the first LED's short leg to the second LED's long leg, so the same current, about 11 mA, flows through both.</p>
+         <p>Each red LED drops about 2 V, which leaves less of the 9 V across the resistor. That's why the current is lower than with one LED, and both glow a little dimmer. Take either LED out and the loop breaks: both go dark.</p>`},
+  {id:'parallel', name:'Two LEDs in parallel', tag:'works',
+    parts:[BAT, W('w1','tp4','a4','red'), R('r1',470,'e4','e9','Resistor 1'), D('d1','c9','c10','LED 1'), W('w2','a10','tn10','black',-0.6),
+           W('w3','tp20','a20','red'), R('r2',470,'e20','e25','Resistor 2'), D('d2','c25','c26','LED 2'), W('w4','a26','tn26','black')],
+    why:`<p>Each LED has its own resistor and its own path from the + rail to the − rail. Each branch gets about 15 mA, so the battery supplies about 30 mA in total.</p>
+         <p>Watch the current: the rail near the battery carries the current for both branches, then it splits. Now turn on <b>Split power rails</b>. The right-hand branch loses power, but the left-hand one keeps working.</p>`},
+  {id:'short', name:'LED legs in the same column', tag:'mistake',
+    parts:[BAT, W('w1','tp4','a4','red'), R('r1',470,'e4','e8'), D('d1','c8','d8'), W('w2','a9','tn9','black')],
+    why:`<p>The LED is standing along column 8, so both its legs are in the same five-hole strip. The metal clip joins the legs directly, so there's no voltage across the LED. Column 9, where the black wire is waiting, isn't connected to anything else.</p>
+         <p>Point at a8 or b8, just above the LED: the readout lists the resistor and both LED legs, all plugged into this one strip.</p>`,
+    fix:{parts:[BAT, W('w1','tp4','a4','red'), R('r1',470,'e4','e8'), D('d1','c8','c9'), W('w2','a9','tn9','black')],
+      note:'Fixed: the LED is turned so its legs sit in columns 8 and 9.',
+      why:`<p>Now the legs sit in two different columns: the long leg in column 8, fed by the resistor, and the short leg in column 9, next to the black wire. The loop is complete, so the LED lights.</p>`}},
+  {id:'backwards', name:'LED in backwards', tag:'mistake',
+    parts:[BAT, W('w1','tp4','a4','red'), R('r1',470,'e4','e8'), D('d1','c9','c8'), W('w2','a9','tn9','black')],
+    why:`<p>An LED only lets current through one way: in through the long leg (anode, +) and out through the short leg (cathode, −), which sits next to the flat edge of its rim. Here the flat edge faces the resistor, so the LED blocks the current and stays dark.</p>
+         <p>Pin b9, then point at b8: the meter reads 9.00 V. The full battery voltage sits across the LED, the wrong way round. Most LEDs are only rated for about 5 V in reverse, so don't leave a real one like this for long.</p>`,
+    fix:{parts:[BAT, W('w1','tp4','a4','red'), R('r1',470,'e4','e8'), D('d1','c8','c9'), W('w2','a9','tn9','black')],
+      note:'Fixed: the LED is turned around.',
+      why:`<p>The long leg now faces the resistor and the + side; the flat edge faces the − side. Current can flow, so the LED lights.</p>`}},
+  {id:'rails', name:'Bottom rails not powered', tag:'mistake',
+    parts:[BAT, W('w1','bp4','j4','red',-0.6), R('r1',470,'f4','f8'), D('d1','h8','h9'), W('w2','j9','bn9','black')],
+    why:`<p>The circuit on the bottom half is built correctly, but it takes its power from the bottom rails, and the battery is only connected to the top rails. Inside the board, the top and bottom rails aren't connected to each other.</p>
+         <p>Point at the bottom + rail: it isn't connected to the battery.</p>`,
+    fix:{parts:[BAT, W('w1','bp4','j4','red',-0.6), R('r1',470,'f4','f8'), D('d1','h8','h9'), W('w2','j9','bn9','black'),
+                W('w3','tp12','bp12','red',0.35), W('w4','tn11','bn11','black',0.35)],
+      note:'Fixed: two jumper wires carry + and − down to the bottom rails.',
+      why:`<p>Two long jumper wires, in columns 11 and 12, carry + and − from the top rails down to the bottom rails: + to +, − to −. Many people add these two jumpers first on every new board.</p>`}}
+];
+
+/* ---------- App state ---------- */
+const state = {mode:'explore', xray:false, split:false, flow:true, circuit:'switch', fixed:false, swOn:true,
+               hover:'c12', hoverPart:null, cursor:null, cursorCol:null, kbd:false, portrait:false};
+const pins = {explore:null, circuits:null};
+const getPin = () => pins[state.mode];
+const setPin = v => { pins[state.mode] = v; };
+let sim = null;
+
+const circ = () => CIRCUITS.find(c => c.id === state.circuit);
+const parts = () => { const c = circ(); return state.fixed && c.fix ? c.fix.parts : c.parts; };
+const partById = id => parts().find(p => p.id === id);
+function partName(p) {
+  if (p.label) return p.label;
+  switch (p.t) {
+    case 'bat': return '9 V battery';
+    case 'wire': return `${cap(p.color)} wire`;
+    case 'res': return `${p.ohms} Ω resistor`;
+    case 'led': return 'LED';
+    default: return 'Slide switch';
+  }
+}
+
+/* ---------- DC solver: nodal analysis, LEDs as piecewise-linear diodes ---------- */
+const RW = 0.01, RBAT = 0.5, VON = 1.85, RON = 10, GOFF = 1e-9, GMIN = 1e-9;
+const LIT = 5e-4;
+
+function gauss(A, rhs) {
+  const n = rhs.length;
+  const M = A.map((row, i) => { const r = Array.from(row); r.push(rhs[i]); return r; });
+  for (let c = 0; c < n; c++) {
+    let p = c;
+    for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    [M[c], M[p]] = [M[p], M[c]];
+    const d = M[c][c];
+    if (Math.abs(d) < 1e-300) continue;
+    for (let r = c + 1; r < n; r++) {
+      const f = M[r][c] / d;
+      if (!f) continue;
+      for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k];
+    }
+  }
+  const x = new Float64Array(n);
+  for (let r = n - 1; r >= 0; r--) {
+    let s = M[r][n];
+    for (let k = r + 1; k < n; k++) s -= M[r][k] * x[k];
+    x[r] = Math.abs(M[r][r]) < 1e-300 ? 0 : s / M[r][r];
+  }
+  return x;
+}
+
+function simulate(list, split, swOn) {
+  const GND = 'BAT-';
+  const sn = h => stripOf(h, split);
+  const br = [];
+  for (const p of list) {
+    if (p.t === 'bat') {
+      br.push({part:p.id, role:'cell', kind:'bat', a:'BAT+', b:GND, v:p.v});
+      br.push({part:p.id, role:'lead+', kind:'g', g:1 / RW, a:'BAT+', b:sn(p.plus), hb:p.plus});
+      br.push({part:p.id, role:'lead-', kind:'g', g:1 / RW, a:sn(p.minus), ha:p.minus, b:GND});
+    } else if (p.t === 'wire') br.push({part:p.id, kind:'g', g:1 / RW, a:sn(p.a), b:sn(p.b), ha:p.a, hb:p.b});
+    else if (p.t === 'res') br.push({part:p.id, kind:'g', g:1 / p.ohms, a:sn(p.a), b:sn(p.b), ha:p.a, hb:p.b});
+    else if (p.t === 'led') br.push({part:p.id, kind:'led', on:false, a:sn(p.a), b:sn(p.k), ha:p.a, hb:p.k});
+    else if (p.t === 'sw') {
+      const th = swOn ? p.p[0] : p.p[2];
+      br.push({part:p.id, kind:'g', g:1 / RW, a:sn(th), b:sn(p.p[1]), ha:th, hb:p.p[1]});
+    }
+  }
+  const idx = new Map();
+  for (const b of br) for (const n of [b.a, b.b]) if (n !== GND && !idx.has(n)) idx.set(n, idx.size);
+  const N = idx.size;
+  const ix = n => n === GND ? -1 : idx.get(n);
+  let V = new Float64Array(N);
+  const volt = n => n === GND ? 0 : (idx.has(n) ? V[idx.get(n)] : 0);
+
+  for (let iter = 0; iter < 60; iter++) {
+    const G = Array.from({length:N}, () => new Float64Array(N));
+    const I = new Float64Array(N);
+    for (let k = 0; k < N; k++) G[k][k] += GMIN;
+    const stamp = (a, b, g) => {
+      const i = ix(a), j = ix(b);
+      if (i >= 0) G[i][i] += g;
+      if (j >= 0) G[j][j] += g;
+      if (i >= 0 && j >= 0) { G[i][j] -= g; G[j][i] -= g; }
+    };
+    const inject = (n, c) => { const i = ix(n); if (i >= 0) I[i] += c; };
+    for (const b of br) {
+      if (b.kind === 'g') stamp(b.a, b.b, b.g);
+      else if (b.kind === 'bat') { stamp(b.a, b.b, 1 / RBAT); inject(b.a, b.v / RBAT); inject(b.b, -b.v / RBAT); }
+      else if (b.on) { stamp(b.a, b.b, 1 / RON); inject(b.a, VON / RON); inject(b.b, -VON / RON); }
+      else stamp(b.a, b.b, GOFF);
+    }
+    V = gauss(G, I);
+    let changed = false;
+    for (const b of br) if (b.kind === 'led') {
+      const vd = volt(b.a) - volt(b.b);
+      if (!b.on && vd > VON + 1e-6) { b.on = true; changed = true; }
+      else if (b.on && vd < VON - 1e-9) { b.on = false; changed = true; }
+    }
+    if (!changed) break;
+  }
+  for (const b of br) {
+    b.vd = volt(b.a) - volt(b.b);
+    b.i = b.kind === 'g' ? b.vd * b.g
+        : b.kind === 'bat' ? (b.vd - b.v) / RBAT
+        : (b.on ? (b.vd - VON) / RON : b.vd * GOFF);
+  }
+
+  // Which nodes can reach the battery at all
+  const adj = new Map();
+  const link = (x, y) => { if (!adj.has(x)) adj.set(x, []); adj.get(x).push(y); };
+  for (const b of br) { link(b.a, b.b); link(b.b, b.a); }
+  const reach = new Set([GND]);
+  const q = [GND];
+  while (q.length) { const n = q.pop(); for (const m of adj.get(n) || []) if (!reach.has(m)) { reach.add(m); q.push(m); } }
+
+  // Nets: strips joined by near-zero-resistance links (wires, closed switch, battery leads)
+  const par = {};
+  const find = x => (par[x] === undefined || par[x] === x) ? x : (par[x] = find(par[x]));
+  const unite = (x, y) => { x = find(x); y = find(y); if (x !== y) par[x] = y; };
+  for (const b of br) if (b.kind === 'g' && b.g >= 1 / RW / 2) unite(b.a, b.b);
+  const nets = new Map();
+  for (const n of [...idx.keys(), GND]) { const r = find(n); if (!nets.has(r)) nets.set(r, []); nets.get(r).push(n); }
+
+  // What is plugged into each strip
+  const pinMap = new Map();
+  const addPin = (hole, label) => { const s = sn(hole); if (!pinMap.has(s)) pinMap.set(s, []); pinMap.get(s).push({hole, label}); };
+  for (const p of list) {
+    const nm = partName(p);
+    if (p.t === 'bat') { addPin(p.plus, "battery's red lead (+)"); addPin(p.minus, "battery's black lead (−)"); }
+    else if (p.t === 'wire') { addPin(p.a, `${p.color} wire (to ${holeShort(p.b)})`); addPin(p.b, `${p.color} wire (to ${holeShort(p.a)})`); }
+    else if (p.t === 'res') { addPin(p.a, nm); addPin(p.b, nm); }
+    else if (p.t === 'led') { addPin(p.a, `${nm}, long leg (+)`); addPin(p.k, `${nm}, short leg (−)`); }
+    else if (p.t === 'sw') { addPin(p.p[0], 'switch, ON pin'); addPin(p.p[1], 'switch, middle pin'); addPin(p.p[2], 'switch, OFF pin'); }
+  }
+
+  // Current flow: through each part, and along each metal strip between the pins in it
+  const flows = [];
+  const inj = new Map();
+  const addInj = (hole, i) => { const s = sn(hole); if (!inj.has(s)) inj.set(s, []); inj.get(s).push({pos:axisPos(hole), hole, i}); };
+  for (const b of br) {
+    if (b.ha) addInj(b.ha, -b.i);
+    if (b.hb) addInj(b.hb, b.i);
+    if (b.kind !== 'bat') flows.push({part:b.part, role:b.role, i:b.i});
+  }
+  for (const [s, entries] of inj) {
+    entries.sort((x, y) => x.pos - y.pos);
+    let run = 0;
+    for (let k = 0; k < entries.length - 1; k++) {
+      run += entries[k].i;
+      if (entries[k].hole === entries[k + 1].hole) continue;
+      flows.push({strip:s, from:entries[k].hole, to:entries[k + 1].hole, i:run});
+    }
+  }
+
+  return {br, idx, volt, reach, find, nets, pins:pinMap, flows, split, swOn,
+          battery:br.find(b => b.kind === 'bat'),
+          netOf:n => nets.get(find(n)) || [n]};
+}
+
+function ledStatus(s, p) {
+  const b = s.br.find(x => x.part === p.id);
+  if (b.i > LIT) return {kind:'lit', b};
+  if (s.find(b.a) === s.find(b.b)) return {kind:'short', b};
+  if (b.vd < -0.5) return {kind:'reversed', b};
+  const list = parts();
+  const litIn = alt => alt.br.find(x => x.part === p.id).i > LIT;
+  if (list.some(q => q.t === 'sw') && !s.swOn && litIn(simulate(list, s.split, true))) return {kind:'switch', b};
+  if (s.split && litIn(simulate(list, false, s.swOn))) {
+    const rails = ['tp', 'tn', 'bn', 'bp'];
+    const bridge = r => ({t:'wire', id:'gap-' + r, a:r + '12', b:r + '14', color:'red'});
+    const gaps = rails.filter(r => !litIn(simulate([...list, ...rails.filter(q => q !== r).map(bridge)], true, s.swOn)));
+    return {kind:'split', b, gaps};
+  }
+  return {kind:'open', b};
+}
+const LED_TEXT = {
+  lit:s => `Lit · ${fmtI(s.b.i)}`,
+  short:() => 'Dark · both legs are in the same strip, so the metal strip carries the current around the LED instead of through it',
+  reversed:() => 'Dark · in backwards: the long leg (anode) must face the + side',
+  switch:() => 'Dark · the switch is OFF, so the loop is open',
+  split:s => s.gaps && s.gaps.length
+    ? `Dark · the split rails break the loop. Bridge the gap in the ${s.gaps.map(r => `${RAIL[r].edge} ${RAIL[r].sign}`).join(' and ')} rail${s.gaps.length > 1 ? 's' : ''} (between columns 12 and 14).`
+    : 'Dark · the split rails break the loop. Bridge the gaps with jumper wires.',
+  open:() => "Dark · the loop isn't complete. Point along the path to find where it breaks."
+};
+const fmtI = i => { const a = Math.abs(i) * 1000; return `${(a < 0.05 ? 0 : a).toFixed(1)} mA`; };
+const fmtV = v => (Math.abs(v) < 0.005 ? 0 : v).toFixed(2).replace('-', '−') + ' V';
+const endDot = s => /[.!]$/.test(s) ? s : s + '.';
+
+/* ---------- SVG drawing ---------- */
+const $ = s => document.querySelector(s);
+const svg = $('#board');
+const boardWrap = $('#boardWrap');
+let root = null;
+const L = {};
+const metalRects = new Map();
+
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+// Text stays upright when the whole board is rotated for narrow screens
+function txt(parent, x, y, s, cls) {
+  const t = el('text', {x, y, class:cls}, parent);
+  if (state.portrait) t.setAttribute('transform', `rotate(-90 ${x} ${y})`);
+  t.textContent = s;
+  return t;
+}
+const hp = id => { const h = HOLE.get(id); return [h.x, h.y]; };
+const hexToRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+function mix(a, b, t) {
+  t = Math.max(0, Math.min(1, t));
+  const pa = hexToRgb(a), pb = hexToRgb(b);
+  return '#' + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+function geomD(g, rev) {
+  const f = p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
+  if (g.t === 'line') return rev ? `M ${f(g.b)} L ${f(g.a)}` : `M ${f(g.a)} L ${f(g.b)}`;
+  if (g.t === 'quad') return rev ? `M ${f(g.b)} Q ${f(g.c)} ${f(g.a)}` : `M ${f(g.a)} Q ${f(g.c)} ${f(g.b)}`;
+  return rev ? `M ${f(g.b)} C ${f(g.c2)} ${f(g.c1)} ${f(g.a)}` : `M ${f(g.a)} C ${f(g.c1)} ${f(g.c2)} ${f(g.b)}`;
+}
+function wireGeom(p) {
+  const [ax, ay] = hp(p.a), [bx, by] = hp(p.b);
+  const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy);
+  const bow = (p.bow != null ? p.bow : Math.min(0.22 * len / P, 1.1)) * P;
+  const nx = -dy / len, ny = dx / len;
+  return {t:'quad', a:[ax, ay], c:[(ax + bx) / 2 + nx * bow * 2, (ay + by) / 2 + ny * bow * 2], b:[bx, by]};
+}
+const BATT = {x:-6.3 * P, y:3.2 * P, w:3.8 * P, h:7.4 * P, tp:[-5.2 * P, 3.0 * P], tn:[-3.6 * P, 3.0 * P]};
+function leadGeom(p, sign) {
+  if (sign > 0) {       // terminal -> hole
+    const [hx, hy] = hp(p.plus), [tx, ty] = BATT.tp;
+    return {t:'cubic', a:[tx, ty], c1:[tx, -0.7 * P], c2:[hx, -0.9 * P], b:[hx, hy]};
+  }
+  const [hx, hy] = hp(p.minus), [tx, ty] = BATT.tn;   // hole -> terminal
+  return {t:'cubic', a:[hx, hy], c1:[0.6 * P, 2.7 * P], c2:[tx, 2.2 * P], b:[tx, ty]};
+}
+const BAND_HEX = ['#1C1C1C','#7A4A22','#D0302A','#EE7A1A','#F2C418','#2E9A48','#2F64C8','#7D45A8','#8C8C8C','#F4F4F4'];
+const BAND_NAME = ['black','brown','red','orange','yellow','green','blue','violet','grey','white'];
+function bands(ohms) { const s = String(ohms); return [+s[0], +s[1], s.length - 2]; }
+
+function build() {
+  svg.textContent = '';
+  metalRects.clear();
+  const pt = state.portrait;
+  svg.setAttribute('viewBox', pt ? `${-(VB.y + VB.h)} ${VB.x} ${VB.h} ${VB.w}` : `${VB.x} ${VB.y} ${VB.w} ${VB.h}`);
+  svg.classList.toggle('portrait', pt);
+  svg.classList.toggle('xray', state.xray);
+  const sx = pt ? 4 : 0, sy = pt ? 0 : 4, px = pt ? 1.4 : 0, py = pt ? 0 : 1.4;
+  const defs = el('defs', {}, svg);
+  defs.innerHTML = `
+    <filter id="bshadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="${sx}" dy="${sy}" stdDeviation="5" flood-color="#0C1A20" flood-opacity=".28"/></filter>
+    <filter id="pshadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="${px}" dy="${py}" stdDeviation="1.1" flood-color="#000" flood-opacity=".35"/></filter>
+    <filter id="hot" filterUnits="userSpaceOnUse" x="-160" y="-60" width="860" height="480"><feDropShadow dx="0" dy="0" stdDeviation="2.6" flood-color="#F29100" flood-opacity="1"/></filter>
+    <radialGradient id="glow"><stop offset="0" stop-color="#FF6A4D" stop-opacity=".9"/><stop offset=".35" stop-color="#FF3B2F" stop-opacity=".45"/><stop offset="1" stop-color="#FF3B2F" stop-opacity="0"/></radialGradient>`;
+  root = el('g', pt ? {transform:'rotate(90)'} : {}, svg);
+  for (const k of ['plastic','metal','print','holes','hl','parts','glow','flow','marks']) L[k] = el('g', {class:'L-' + k}, root);
+  L.parts.setAttribute('filter', 'url(#pshadow)');
+  drawBoard();
+  drawHoles();
+  if (state.mode === 'circuits') { drawParts(); drawFlow(); }
+}
+
+function drawBoard() {
+  const g = L.plastic, pr = L.print;
+  el('rect', {x:0, y:0, width:BW, height:BH, rx:0.5 * P, class:'pcb', filter:'url(#bshadow)'}, g);
+  el('rect', {x:0.3 * P, y:8.55 * P, width:BW - 0.6 * P, height:1.7 * P, rx:0.25 * P, class:'pcb-channel'}, g);
+  el('line', {x1:0.3 * P, y1:9.4 * P, x2:BW - 0.3 * P, y2:9.4 * P, class:'pcb-groove'}, g);
+  for (const y of [2.8, 16.02]) el('line', {x1:0.3 * P, y1:y * P, x2:BW - 0.3 * P, y2:y * P, class:'pcb-groove'}, g);
+  const x0 = colX(2) - 0.55 * P, x3 = colX(30) + 0.55 * P, x1 = colX(12) + 0.55 * P, x2 = colX(14) - 0.55 * P;
+  const segs = state.split ? [[x0, x1], [x2, x3]] : [[x0, x3]];
+  for (const [y, cls] of [[0.42, 'plus'], [2.52, 'minus'], [16.28, 'minus'], [18.38, 'plus']])
+    for (const [a, b] of segs) el('line', {x1:a, y1:y * P, x2:b, y2:y * P, class:`stripe ${cls}`}, pr);
+  for (const r of ['tp','tn','bn','bp'])
+    for (const x of [1.0 * P, BW - 1.0 * P]) txt(pr, x, ROW_Y[r] * P, RAIL[r].sign, `print sign ${RAIL[r].sign === '+' ? 'plus' : 'minus'}`);
+  for (const r of TERM_ROWS) for (const x of [1.0 * P, BW - 1.0 * P]) txt(pr, x, ROW_Y[r] * P, r, 'print');
+  for (const c of [1, 5, 10, 15, 20, 25, 30]) for (const y of [3.28, 15.55]) txt(pr, colX(c), y * P, String(c), 'print num');
+}
+
+function drawHoles() {
+  const s = 0.36 * P;
+  for (const h of HOLES) el('rect', {x:h.x - s / 2, y:h.y - s / 2, width:s, height:s, rx:1.3, class:'hole'}, L.holes);
+  for (const [sid, ids] of STRIPS[state.split ? 1 : 0]) {
+    const hs = ids.map(id => HOLE.get(id));
+    const first = hs[0], last = hs[hs.length - 1];
+    const pad = 0.42 * P, half = 0.3 * P;
+    const r = first.rail
+      ? {x:first.x - pad, y:first.y - half, width:last.x - first.x + 2 * pad, height:2 * half}
+      : {x:first.x - half, y:first.y - pad, width:2 * half, height:last.y - first.y + 2 * pad};
+    metalRects.set(sid, el('rect', {...r, rx:0.12 * P, class:'metal'}, L.metal));
+    for (const h of hs) el('rect', {x:h.x - 0.12 * P, y:h.y - 0.12 * P, width:0.24 * P, height:0.24 * P, class:'metal-mouth'}, L.metal);
+  }
+}
+
+function wireStroke(g, geom, color, ends) {
+  const d = geomD(geom);
+  el('path', {d, class:'wire-outline'}, g);
+  el('path', {d, class:'wire', stroke:color}, g);
+  el('path', {d, class:'wire-shine'}, g);
+  for (const pt of ends) el('circle', {cx:pt[0], cy:pt[1], r:0.13 * P, class:'wire-end'}, g);
+}
+
+function drawParts() {
+  const order = {bat:0, sw:1, res:2, led:3, wire:4};
+  const list = [...parts()].sort((a, b) => order[a.t] - order[b.t]);
+  for (const p of list) {
+    const g = el('g', {class:'part', 'data-part':p.id, 'data-kind':p.t}, L.parts);
+    ({bat:drawBattery, wire:drawWire, res:drawRes, led:drawLED, sw:drawSwitch})[p.t](p, g);
+  }
+}
+
+function drawWire(p, g) {
+  const geo = wireGeom(p);
+  wireStroke(g, geo, WIRE_COLORS[p.color] || p.color, [geo.a, geo.b]);
+}
+
+function drawBattery(p, g) {
+  const b = BATT, cx = b.x + b.w / 2;
+  el('rect', {x:b.x, y:b.y, width:b.w, height:b.h, rx:0.35 * P, class:'bat-body'}, g);
+  el('rect', {x:b.x, y:b.y, width:b.w, height:0.9 * P, rx:0.35 * P, class:'bat-cap'}, g);
+  el('rect', {x:b.x, y:b.y + 0.5 * P, width:b.w, height:0.4 * P, class:'bat-cap'}, g);
+  el('rect', {x:b.x + 0.3 * P, y:b.y + 2.0 * P, width:b.w - 0.6 * P, height:3.6 * P, rx:0.2 * P, class:'bat-label'}, g);
+  if (state.portrait) {
+    const ly = b.y + 3.8 * P;
+    txt(g, cx - 0.4 * P, ly, '9 V', 'bat-volt');
+    txt(g, cx + 0.95 * P, ly, 'BATTERY', 'bat-word');
+  } else {
+    txt(g, cx, b.y + 3.4 * P, '9 V', 'bat-volt');
+    txt(g, cx, b.y + 4.8 * P, 'BATTERY', 'bat-word');
+  }
+  el('circle', {cx:b.tp[0], cy:b.tp[1], r:0.34 * P, class:'bat-term'}, g);
+  const hx = [...Array(6)].map((_, i) => { const a = Math.PI / 3 * i; return `${(b.tn[0] + 0.46 * P * Math.cos(a)).toFixed(1)},${(b.tn[1] + 0.46 * P * Math.sin(a)).toFixed(1)}`; });
+  el('polygon', {points:hx.join(' '), class:'bat-term'}, g);
+  txt(g, b.tp[0], b.y + 0.62 * P, '+', 'bat-sign');
+  txt(g, b.tn[0], b.y + 0.62 * P, '−', 'bat-sign');
+  const lp = leadGeom(p, 1), ln = leadGeom(p, -1);
+  wireStroke(g, lp, WIRE_COLORS.red, [lp.b]);
+  wireStroke(g, ln, WIRE_COLORS.black, [ln.a]);
+}
+
+function drawRes(p, g) {
+  const [ax, ay] = hp(p.a), [bx, by] = hp(p.b);
+  const len = Math.hypot(bx - ax, by - ay), ang = Math.atan2(by - ay, bx - ax) * 180 / Math.PI;
+  const gg = el('g', {transform:`translate(${(ax + bx) / 2} ${(ay + by) / 2}) rotate(${ang})`}, g);
+  el('line', {x1:-len / 2, y1:0, x2:len / 2, y2:0, class:'leg'}, gg);
+  const bl = Math.min(2.3 * P, len - 0.9 * P), bh = 0.64 * P;
+  el('rect', {x:-bl / 2, y:-bh / 2, width:bl, height:bh, rx:bh * 0.45, class:'res-body'}, gg);
+  const cols = [...bands(p.ohms).map(i => BAND_HEX[i]), '#C8A23A'];
+  [0.2, 0.34, 0.48, 0.78].forEach((f, i) => el('rect', {x:-bl / 2 + f * bl, y:-bh / 2, width:0.085 * bl, height:bh, fill:cols[i]}, gg));
+  for (const s of [-1, 1]) el('circle', {cx:s * len / 2, cy:0, r:0.1 * P, class:'leg-end'}, gg);
+}
+
+function drawLED(p, g) {
+  const [ax, ay] = hp(p.a), [kx, ky] = hp(p.k);
+  const ang = Math.atan2(ky - ay, kx - ax) * 180 / Math.PI;
+  const cx = (ax + kx) / 2, cy = (ay + ky) / 2;
+  const b = sim && sim.br.find(x => x.part === p.id);
+  const lvl = b ? Math.max(0, Math.min(1, b.i / 0.015)) : 0;
+  const gg = el('g', {transform:`translate(${cx} ${cy}) rotate(${ang})`}, g);
+  const r = 0.84 * P, f = 0.64 * P, yy = Math.sqrt(r * r - f * f);
+  // Rim with a flat edge on the cathode (short-leg) side
+  el('path', {d:`M ${f} ${-yy} A ${r} ${r} 0 1 0 ${f} ${yy} Z`, class:'led-rim', fill:mix('#7A1820', '#E0352B', lvl)}, gg);
+  el('circle', {cx:0, cy:0, r:0.6 * P, fill:mix('#94222B', '#FF5B45', lvl)}, gg);
+  if (lvl > 0.02) el('circle', {cx:0, cy:0, r:0.3 * P, fill:'#FFD7C9', opacity:(0.85 * Math.pow(lvl, 0.7)).toFixed(2)}, gg);
+  el('ellipse', {cx:-0.18 * P, cy:-0.2 * P, rx:0.22 * P, ry:0.14 * P, class:'led-spec'}, gg);
+  const ux = (kx - ax) / P, uy = (ky - ay) / P;
+  txt(g, ax - ux * 0.55 * P, ay - uy * 0.55 * P, '+', 'led-plus');
+  if (lvl > 0.02) el('circle', {cx, cy, r:P * (1.5 + 1.4 * lvl), fill:'url(#glow)', opacity:(0.3 + 0.65 * Math.pow(lvl, 0.8)).toFixed(2)}, L.glow);
+}
+
+function drawSwitch(p, g) {
+  const [x0, y0] = hp(p.p[0]), [x1, y1] = hp(p.p[1]), [x2, y2] = hp(p.p[2]);
+  const ang = Math.atan2(y2 - y0, x2 - x0) * 180 / Math.PI;
+  const gg = el('g', {transform:`translate(${x1} ${y1}) rotate(${ang})`}, g);
+  const w = 3.1 * P, h = 1.04 * P;
+  el('rect', {x:-w / 2, y:-h / 2, width:w, height:h, rx:0.16 * P, class:'sw-body'}, gg);
+  el('rect', {x:-1.2 * P, y:-0.22 * P, width:2.4 * P, height:0.44 * P, rx:0.08 * P, class:'sw-track'}, gg);
+  const knob = el('g', {class:'sw-knob-g'}, gg);
+  knob.style.transform = `translateX(${state.swOn ? -1.2 * P : 0}px)`;
+  el('rect', {x:0.06 * P, y:-0.36 * P, width:1.08 * P, height:0.72 * P, rx:0.1 * P, class:'sw-knob'}, knob);
+  for (const x of [0.4, 0.6, 0.8]) el('line', {x1:x * P, y1:-0.2 * P, x2:x * P, y2:0.2 * P, class:'sw-ridge'}, knob);
+}
+
+function flowGeom(f) {
+  if (f.strip) return {t:'line', a:hp(f.from), b:hp(f.to)};
+  const p = partById(f.part);
+  if (p.t === 'bat') return leadGeom(p, f.role === 'lead+' ? 1 : -1);
+  if (p.t === 'wire') return wireGeom(p);
+  if (p.t === 'res') return {t:'line', a:hp(p.a), b:hp(p.b)};
+  if (p.t === 'led') return {t:'line', a:hp(p.a), b:hp(p.k)};
+  const th = sim.swOn ? p.p[0] : p.p[2];
+  return {t:'line', a:hp(th), b:hp(p.p[1])};
+}
+
+function drawFlow() {
+  L.flow.textContent = '';
+  if (!state.flow || !sim) return;
+  for (const f of sim.flows) {
+    const mag = Math.abs(f.i);
+    if (mag < 2e-4) continue;
+    const d = geomD(flowGeom(f), f.i < 0);
+    const speed = Math.max(12, Math.min(170, 60 * mag / 0.015));   // board units per second
+    for (const cls of ['flow-halo', 'flow']) el('path', {d, class:cls}, L.flow).style.animationDuration = (10 / speed).toFixed(3) + 's';
+  }
+}
+
+/* ---------- Highlights ---------- */
+function partPins(p) {
+  return p.t === 'bat' ? [p.plus, p.minus] : p.t === 'led' ? [p.a, p.k] : p.t === 'sw' ? p.p : [p.a, p.b];
+}
+function netStrips(hole) {
+  const sid = stripOf(hole);
+  if (!sim || !sim.idx.has(sid)) return [sid];
+  return sim.netOf(sid).filter(n => n !== 'BAT+' && n !== 'BAT-');
+}
+function highlightSets() {
+  const pri = new Set(), sec = new Set();
+  const pin = getPin(), hov = state.hover;
+  const group = h => state.mode === 'explore' ? [stripOf(h)] : netStrips(h);
+  if (pin) group(pin).forEach(s => pri.add(s));
+  if (hov && hov !== pin) group(hov).forEach(s => { if (!pri.has(s)) (pin ? sec : pri).add(s); });
+  if (state.hoverPart) {
+    const p = partById(state.hoverPart);
+    if (p) partPins(p).forEach(h => group(h).forEach(s => pri.add(s)));
+  }
+  return {pri, sec};
+}
+function band(sid, cls) {
+  const hs = stripHoles(sid).map(id => HOLE.get(id));
+  if (!hs.length) return;
+  const xs = hs.map(h => h.x), ys = hs.map(h => h.y), pad = 0.36 * P;
+  const x = Math.min(...xs) - pad, y = Math.min(...ys) - pad;
+  el('rect', {x, y, width:Math.max(...xs) - x + pad, height:Math.max(...ys) - y + pad, rx:pad, class:cls}, L.hl);
+  const m = metalRects.get(sid);
+  if (m) m.classList.add(cls === 'band' ? 'hot' : 'hot2');
+}
+function drawHighlight() {
+  L.hl.textContent = '';
+  L.marks.textContent = '';
+  for (const r of metalRects.values()) r.classList.remove('hot', 'hot2');
+  const {pri, sec} = highlightSets();
+  for (const s of sec) band(s, 'band band-2');
+  for (const s of pri) band(s, 'band');
+  const ring = (id, cls, r) => { const [x, y] = hp(id); el('circle', {cx:x, cy:y, r, class:cls}, L.marks); };
+  const pin = getPin();
+  if (pin) ring(pin, 'ring-pin', 0.44 * P);
+  if (state.hover && state.hover !== pin) ring(state.hover, 'ring-hover', 0.4 * P);
+  if (state.kbd && state.cursor) ring(state.cursor, 'ring-cursor', 0.56 * P);
+  for (const g of L.parts.querySelectorAll('[data-part]')) {
+    if (g.dataset.part === state.hoverPart) g.setAttribute('filter', 'url(#hot)');
+    else g.removeAttribute('filter');
+  }
+}
+
+/* ---------- Probe readout ---------- */
+const head = (title, sub, pinned, plain) =>
+  `<div class="ph"><span class="${plain ? 'pt' : 'pid'}">${title}</span>${sub ? `<span class="psub">${sub}</span>` : ''}` +
+  (pinned ? `<span class="chip">Pinned</span><button type="button" class="linkbtn" data-act="unpin">Unpin</button>` : '') + `</div>`;
+function holeHead(id, pinned) {
+  const h = HOLE.get(id);
+  if (h.rail) return head(`${cap(RAIL[h.row].edge)} ${RAIL[h.row].sign} rail`, `Hole under column ${h.col}`, pinned, true);
+  return head(id, `Column ${h.col}, ${isTop(h.row) ? 'top' : 'bottom'} half`, pinned, false);
+}
+
+function exploreSingle(id, pinned) {
+  const h = HOLE.get(id), sid = stripOf(id);
+  const mates = stripHoles(sid).filter(x => x !== id);
+  let body;
+  if (!h.rail) {
+    const other = isTop(h.row) ? `f${h.col}–j${h.col}` : `a${h.col}–e${h.col}`;
+    const nb = [h.col - 1, h.col + 1].filter(c => c >= 1 && c <= COLS).map(c => mono(h.row + c));
+    body = `<p><span class="yes">Connected to</span> ${mates.map(mono).join(' ')}, the other holes in this five-hole strip.</p>
+            <p><span class="no">Not connected to</span> ${mono(other)} across the center gap, or to ${nb.join(' and ')} beside it in row ${h.row}.</p>`;
+  } else {
+    const r = RAIL[h.row];
+    const partner = Object.keys(RAIL).find(k => k !== h.row && RAIL[k].edge === r.edge);
+    const otherEdge = r.edge === 'top' ? 'bottom' : 'top';
+    const sec = sid.includes('-') ? (sid.endsWith('L') ? 'columns 2–12' : 'columns 14–30') : '';
+    body = `<p><span class="yes">Connected to</span> all ${mates.length + 1} holes along this ${sec ? `section of the rail (${sec})` : 'rail'}. Rails run the long way.</p>
+            <p><span class="no">Not connected to</span> the ${RAIL[partner].sign} rail right beside it, or to the rails on the ${otherEdge} edge.</p>`;
+    if (sec) body += `<p class="note">This board's rails are split at column 13. Bridge the gap with a jumper wire if you need the whole length.</p>`;
+  }
+  return holeHead(id, pinned) + body;
+}
+
+function relation(a, b) {
+  const A = HOLE.get(a), B = HOLE.get(b), sa = stripOf(a), sb = stripOf(b);
+  if (sa === sb) return {ok:true, text:`Both holes are in the same metal strip: ${stripDesc(sa)}.`};
+  if (!A.rail && !B.rail) {
+    if (A.col === B.col) return {ok:false, text:'Same column, but on opposite sides of the center gap. The a–e and f–j strips are separate.'};
+    if (A.row === B.row) return {ok:false, text:'Same lettered row, but different columns. Holes along a row are not joined: each column has its own strip.'};
+    return {ok:false, text:'Different columns, so different strips.'};
+  }
+  if (A.rail !== B.rail) return {ok:false, text:"One is on a power rail and the other is in a numbered column. They're only connected if you add a jumper wire between them."};
+  const ra = RAIL[A.row], rb = RAIL[B.row];
+  if (A.row === B.row) return {ok:false, text:"Same rail, but this board's rails are split at column 13. The left section (columns 2–12) and the right section (columns 14–30) are separate."};
+  if (ra.sign !== rb.sign) return {ok:false, text:`The ${ra.edge} ${ra.sign} rail and the ${rb.edge} ${rb.sign} rail are separate strips, on opposite sides of the supply. Never join a + rail to a − rail: that shorts the battery.`};
+  return {ok:false, text:`The ${ra.edge} and ${rb.edge} ${ra.sign} rails are separate. To power both edges, join them with a jumper wire, ${ra.sign} to ${rb.sign}.`};
+}
+
+function pairHead(a, b, verdict) {
+  return `<div class="ph"><span class="pid">${holeShort(a)}</span><span class="psub">and</span><span class="pid">${holeShort(b)}</span>${verdict}</div>`;
+}
+
+function circuitHole(id, pinned) {
+  const sid = stripOf(id);
+  let html = holeHead(id, pinned);
+  const plugged = sim.pins.get(sid) || [];
+  if (!plugged.length) return html + `<p>Nothing is plugged into this strip.</p>`;
+  if (!sim.reach.has(sid)) html += `<div class="meter"><span class="mv off">—</span><span class="ml">Not connected to the battery, so there's no voltage here.</span></div>`;
+  else html += `<div class="meter"><span class="mv">${fmtV(sim.volt(sid))}</span><span class="ml">measured from the battery's − terminal</span></div>`;
+  html += `<p><b>Plugged into this strip:</b> ${plugged.map(x => x.label).join(', ')}.</p>`;
+  const joined = sim.netOf(sid).filter(n => n !== sid)
+    .map(n => n === 'BAT+' ? "the battery's + terminal" : n === 'BAT-' ? "the battery's − terminal" : stripDesc(n));
+  if (joined.length) html += `<p><b>Also joined to:</b> ${joined.join(', ')}.</p>`;
+  return html;
+}
+
+function circuitPair(a, b) {
+  const sa = stripOf(a), sb = stripOf(b);
+  const same = sa === sb || (sim.idx.has(sa) && sim.idx.has(sb) && sim.find(sa) === sim.find(sb));
+  const fa = !sim.reach.has(sa), fb = !sim.reach.has(sb);
+  let reading, text;
+  if (same) { reading = '0.00 V'; text = 'These holes are connected, so there is no voltage between them.'; }
+  else if (fa || fb) { reading = '—'; text = `${mono(holeShort(fa ? a : b))} isn't connected to the battery, so there's nothing to measure.`; }
+  else {
+    const v = sim.volt(sb) - sim.volt(sa);
+    reading = fmtV(v);
+    text = `A multimeter with its black probe on ${mono(holeShort(a))} and its red probe on ${mono(holeShort(b))} would read ${fmtV(v)}.`;
+  }
+  return pairHead(a, b, '') + `<div class="meter"><span class="mv${reading === '—' ? ' off' : ''}">${reading}</span><span class="ml">between the two holes</span></div><p>${text}</p>`;
+}
+
+function partInfo(id) {
+  const p = partById(id);
+  const b = sim.br.find(x => x.part === id && x.role !== 'lead+' && x.role !== 'lead-');
+  const meter = (v, label) => `<div class="meter"><span class="mv">${v}</span><span class="ml">${label}</span></div>`;
+  if (p.t === 'res') {
+    const bs = bands(p.ohms).map(i => BAND_NAME[i]).concat('gold');
+    let h = head(partName(p), `${p.a} to ${p.b}`, false, true) + meter(fmtI(b.i), `through it, with ${fmtV(Math.abs(b.vd))} across it`);
+    h += `<p>Color bands: ${bs.join(', ')} = ${p.ohms} Ω.</p>`;
+    if (Math.abs(b.i) > 5e-5) h += `<p>Ohm's law check: ${fmtV(Math.abs(b.vd))} ÷ ${p.ohms} Ω = ${fmtI(b.i)}.</p>`;
+    return h;
+  }
+  if (p.t === 'led') {
+    const s = ledStatus(sim, p);
+    return head(partName(p), 'Red, 5 mm', false, true) + meter(fmtI(s.kind === 'lit' ? b.i : 0), `through it, with ${fmtV(b.vd)} across it`) +
+      `<p>Long leg (anode, +) in ${mono(p.a)}. Short leg (cathode, −) in ${mono(p.k)}, next to the flat edge of the rim.</p><p>${endDot(LED_TEXT[s.kind](s))}</p>`;
+  }
+  if (p.t === 'wire') {
+    return head(`${cap(p.color)} jumper wire`, `${holeShort(p.a)} to ${holeShort(p.b)}`, false, true) + meter(fmtI(b.i), 'through it') +
+      `<p>Joins ${stripDesc(stripOf(p.a))} to ${stripDesc(stripOf(p.b))}. A wire has almost no resistance, so both ends sit at the same voltage.</p>`;
+  }
+  if (p.t === 'sw') {
+    const [p0, p1, p2] = p.p;
+    return head('Slide switch', state.swOn ? 'Currently ON' : 'Currently OFF', false, true) + meter(fmtI(b.i), 'through it') +
+      `<p>The middle pin ${mono(p1)} is joined to ${mono(p0)} when the switch is ON, or to ${mono(p2)} when it's OFF. Nothing else is plugged into column ${HOLE.get(p2).col}, so OFF breaks the loop.</p><p>Click the switch to slide it.</p>`;
+  }
+  const out = -sim.battery.i;
+  return head('9 V battery', 'Red lead in the top + rail, black lead in the top − rail', false, true) +
+    meter(fmtI(out), out > 5e-5 ? 'leaving the + terminal' : `no current, because ${noCurrentReason()}`) +
+    `<p>Every loop starts at the battery's + terminal and must find its way back to the − terminal. A real battery loses a little voltage inside itself when current flows, so the + rail reads a bit under 9 V.</p>`;
+}
+
+function renderProbe() {
+  const box = $('#probe');
+  const pin = getPin(), hov = state.hover;
+  let html;
+  if (state.mode === 'explore') {
+    if (pin && hov && hov !== pin) {
+      const rel = relation(pin, hov);
+      html = pairHead(pin, hov, `<span class="verdict ${rel.ok ? 'ok' : 'bad'}">${rel.ok ? 'Connected' : 'Not connected'}</span>`) + `<p>${rel.text}</p>`;
+    } else if (hov || pin) html = exploreSingle(hov || pin, !!pin && (!hov || hov === pin));
+    else html = `<p>Point at any hole to see what it's connected to. Click a hole to pin it, then point at another hole to compare.</p>`;
+  } else if (state.hoverPart && partById(state.hoverPart)) html = partInfo(state.hoverPart);
+  else if (pin && hov && hov !== pin) html = circuitPair(pin, hov);
+  else if (hov || pin) html = circuitHole(hov || pin, !!pin && (!hov || hov === pin));
+  else {
+    const out = -sim.battery.i;
+    html = head(circ().name, '', false, true) +
+      `<div class="meter"><span class="mv">${fmtI(out)}</span><span class="ml">${out > 5e-5 ? 'flowing from the battery' : `no current, because ${noCurrentReason()}`}</span></div>` +
+      `<p>Point at any hole to measure its voltage, or at a part to see the current through it.${parts().some(p => p.t === 'sw') ? ' Click the switch to slide it.' : ''}</p>`;
+  }
+  if (html !== renderProbe.last) { box.innerHTML = html; renderProbe.last = html; }
+}
+function noCurrentReason() {
+  const kinds = parts().filter(q => q.t === 'led').map(p => ledStatus(sim, p).kind);
+  if (kinds.includes('reversed')) return 'a backwards LED is blocking it';
+  if (kinds.includes('switch')) return 'the switch is OFF';
+  if (kinds.includes('split')) return 'a split rail breaks the loop';
+  return "the loop isn't complete";
+}
+
+/* ---------- Circuit panel ---------- */
+function renderCircuitList() {
+  const list = $('#clist');
+  list.textContent = '';
+  for (const c of CIRCUITS) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'citem'; b.id = 'circ-' + c.id; b.dataset.id = c.id;
+    b.innerHTML = `<span>${c.name}</span><span class="tag ${c.tag}">${c.tag === 'works' ? 'Works' : 'Mistake'}</span>`;
+    b.addEventListener('click', () => { selectCircuit(c.id); revealBoard(); });
+    list.appendChild(b);
+  }
+}
+function renderCircuitPanel() {
+  const c = circ();
+  for (const b of document.querySelectorAll('.citem')) b.setAttribute('aria-pressed', String(b.dataset.id === c.id));
+  $('#cName').textContent = c.name;
+  const tag = $('#cTag');
+  tag.className = `tag ${c.tag}`;
+  tag.textContent = c.tag === 'works' ? 'Works' : 'Mistake';
+  $('#cWhy').innerHTML = state.fixed && c.fix ? c.fix.why : c.why;
+  const fixBtn = $('#fixBtn');
+  fixBtn.hidden = !c.fix;
+  fixBtn.textContent = state.fixed ? 'Show the mistake again' : 'Show the fix';
+  const note = $('#fixNote');
+  note.hidden = !(state.fixed && c.fix);
+  note.textContent = state.fixed && c.fix ? c.fix.note : '';
+  const swBtn = $('#swBtn');
+  swBtn.hidden = !parts().some(p => p.t === 'sw');
+  swBtn.textContent = state.swOn ? 'Slide switch to OFF' : 'Slide switch to ON';
+  const items = [];
+  const li = (cls, name, text) => `<li class="${cls}"><span class="dot"></span><span><b>${name}</b> · <span class="num">${text}</span></span></li>`;
+  for (const p of parts().filter(q => q.t === 'led')) {
+    const s = ledStatus(sim, p);
+    items.push(li(s.kind === 'lit' ? 'good' : 'bad', partName(p), LED_TEXT[s.kind](s)));
+  }
+  const out = -sim.battery.i;
+  if (out > 1) items.push(li('bad', 'Short circuit!', 'current is flowing straight from + to − with almost no resistance'));
+  items.push(li('', 'Battery', out > 5e-5 ? `supplying ${fmtI(out)}` : `no current, because ${noCurrentReason()}`));
+  for (const p of parts().filter(q => q.t === 'res')) {
+    const b = sim.br.find(x => x.part === p.id);
+    items.push(li('', partName(p), `${fmtV(Math.abs(b.vd))} across it, ${fmtI(b.i)} through it`));
+  }
+  $('#cStatus').innerHTML = items.join('');
+}
+
+/* ---------- Update cycle ---------- */
+function refresh() { drawHighlight(); renderProbe(); }
+function update() {
+  sim = state.mode === 'circuits' ? simulate(parts(), state.split, state.swOn) : null;
+  build();
+  if (state.mode === 'circuits') renderCircuitPanel();
+  refresh();
+}
+function clearHover() { state.hover = null; state.hoverPart = null; }
+
+const PAGES = ['explore', 'circuits', 'ohm'];
+const HEAD_TEXT = {
+  board:['Circuits lab · Solderless breadboard', 'Find out which holes are connected inside the board, then see what that means for a working circuit.'],
+  ohm:["Circuits lab · Ohm's law and resistors", "Work out voltage, current and resistance, then read a resistor's value from its color bands."]
+};
+let page = 'explore';
+function setMode(m) {
+  if (page === m) return;
+  page = m;
+  tabs.forEach((t, i) => { const on = PAGES[i] === m; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; });
+  const ws = m === 'ohm';
+  $('#bbLayout').hidden = ws;
+  $('#ohmPage').hidden = !ws;
+  document.body.classList.toggle('ws-mode', ws);
+  [$('#appEyebrow').textContent, $('#appSub').textContent] = HEAD_TEXT[ws ? 'ohm' : 'board'];
+  if (ws) document.dispatchEvent(new CustomEvent('ws:show'));
+  if (ws || state.mode === m) return;
+  state.mode = m;
+  clearHover();
+  state.cursor = null;
+  $('#explorePanel').hidden = m !== 'explore';
+  $('#circuitsPanel').hidden = m !== 'circuits';
+  $('#flowTog').hidden = m !== 'circuits';
+  $('#lgFlow').hidden = m !== 'circuits';
+  update();
+}
+function selectCircuit(id) {
+  state.circuit = id; state.fixed = false; state.swOn = true;
+  pins.circuits = null;
+  clearHover();
+  update();
+}
+function toggleSwitch() {
+  state.swOn = !state.swOn;
+  const knob = L.parts.querySelector('.sw-knob-g');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (knob && !reduce) {
+    knob.style.transform = `translateX(${state.swOn ? -1.2 * P : 0}px)`;
+    clearTimeout(toggleSwitch.t);
+    toggleSwitch.t = setTimeout(update, 190);
+  } else update();
+}
+
+/* ---------- Pointer ---------- */
+function toBoard(e) {
+  const m = root.getScreenCTM();
+  if (!m) return {x:-1e9, y:-1e9};
+  return new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+}
+function nearestHole(pt) {
+  let best = null, bd = Infinity;
+  for (const h of HOLES) {
+    const d = (h.x - pt.x) ** 2 + (h.y - pt.y) ** 2;
+    if (d < bd) { bd = d; best = h; }
+  }
+  return bd <= (0.62 * P) ** 2 ? best.id : null;
+}
+function targetOf(e) {
+  const pt = toBoard(e), hole = nearestHole(pt);
+  const partEl = state.mode === 'circuits' && e.target.closest ? e.target.closest('[data-part]') : null;
+  if (partEl) {
+    const k = partEl.dataset.kind, h = hole && HOLE.get(hole);
+    const onPin = h && k !== 'sw' && k !== 'bat' && (h.x - pt.x) ** 2 + (h.y - pt.y) ** 2 <= (0.3 * P) ** 2;
+    if (!onPin) return {part:partEl.dataset.part, hole:null};
+  }
+  return {part:null, hole};
+}
+let lastPointer = 'mouse';
+svg.addEventListener('pointerdown', e => { lastPointer = e.pointerType || 'mouse'; });
+svg.addEventListener('pointermove', e => {
+  if (e.pointerType && e.pointerType !== 'mouse') return;
+  const t = targetOf(e);
+  if (t.part !== state.hoverPart || t.hole !== state.hover || state.kbd) {
+    state.hoverPart = t.part; state.hover = t.hole; state.kbd = false;
+    refresh();
+  }
+});
+svg.addEventListener('pointerleave', e => {
+  if (e.pointerType && e.pointerType !== 'mouse') return;
+  if (state.hover || state.hoverPart) { clearHover(); refresh(); }
+});
+svg.addEventListener('click', e => {
+  const touch = lastPointer !== 'mouse';
+  state.kbd = false;
+  const t = targetOf(e);
+  if (t.part) {
+    const p = partById(t.part);
+    if (p && p.t === 'sw') { toggleSwitch(); return; }
+    if (touch) { state.hoverPart = t.part; state.hover = null; refresh(); }
+    return;
+  }
+  const hole = t.hole, pin = getPin();
+  if (!hole) { if (touch) { clearHover(); refresh(); } return; }
+  state.hoverPart = null;
+  if (hole === pin) { setPin(null); state.hover = touch ? null : hole; }
+  else if (touch && pin && hole === state.hover) { setPin(hole); state.hover = null; }
+  else if (touch && pin) state.hover = hole;
+  else { setPin(hole); state.hover = touch ? null : hole; }
+  refresh();
+});
+$('#probe').addEventListener('click', e => {
+  if (e.target.closest('[data-act="unpin"]')) { setPin(null); clearHover(); refresh(); }
+});
+
+/* ---------- Keyboard ---------- */
+function moveCursor(id, dc, dr) {
+  const h = HOLE.get(id);
+  let ri = Math.max(0, Math.min(ROW_ORDER.length - 1, ROW_ORDER.indexOf(h.row) + dr));
+  const row = ROW_ORDER[ri];
+  let col = dc ? h.col : (state.cursorCol || h.col);
+  const nearestRail = c => RAIL_COLS.reduce((a, b) => Math.abs(b - c) < Math.abs(a - c) ? b : a);
+  if (row.length === 2) {
+    let i = RAIL_COLS.indexOf(nearestRail(col));
+    if (dc) i = Math.max(0, Math.min(RAIL_COLS.length - 1, i + dc));
+    col = RAIL_COLS[i];
+  } else col = Math.max(1, Math.min(COLS, col + dc));
+  if (dc || row.length === 1) state.cursorCol = col;
+  return row + col;
+}
+svg.addEventListener('focus', () => {
+  if (state.cursor || lastPointer === 'mouse' && svg.matches(':hover')) return;
+  state.cursor = getPin() || 'c12'; state.cursorCol = HOLE.get(state.cursor).col;
+  state.kbd = true; state.hoverPart = null; state.hover = state.cursor;
+  refresh();
+});
+svg.addEventListener('keydown', e => {
+  const k = e.key;
+  if (e.altKey || e.metaKey || e.ctrlKey) return;
+  if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter',' ','Escape'].includes(k)) return;
+  e.preventDefault();
+  state.kbd = true;
+  state.hoverPart = null;
+  if (!state.cursor) { state.cursor = getPin() || 'c12'; state.cursorCol = HOLE.get(state.cursor).col; }
+  else if (k.startsWith('Arrow')) {
+    const pt = state.portrait;
+    const d = {ArrowLeft:pt ? [0, 1] : [-1, 0], ArrowRight:pt ? [0, -1] : [1, 0],
+               ArrowUp:pt ? [-1, 0] : [0, -1], ArrowDown:pt ? [1, 0] : [0, 1]}[k];
+    state.cursor = moveCursor(state.cursor, d[0], d[1]);
+  }
+  if (k === 'Enter' || k === ' ') setPin(getPin() === state.cursor ? null : state.cursor);
+  if (k === 'Escape') setPin(null);
+  state.hover = state.cursor;
+  refresh();
+});
+svg.addEventListener('blur', () => {
+  state.cursor = null;
+  if (state.kbd) { state.kbd = false; state.hover = null; refresh(); }
+});
+
+/* ---------- Controls ---------- */
+const singleCol = matchMedia('(max-width:1180px)');
+const smooth = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+const revealBoard = () => { if (singleCol.matches) boardWrap.scrollIntoView({block:'start', behavior:smooth()}); };
+const tabs = [$('#tabExplore'), $('#tabCircuits'), $('#tabOhm')];
+tabs.forEach((t, i) => {
+  t.addEventListener('click', () => setMode(PAGES[i]));
+  t.addEventListener('keydown', e => {
+    const n = tabs.length;
+    const j = {ArrowLeft:(i + n - 1) % n, ArrowRight:(i + 1) % n, Home:0, End:n - 1}[e.key];
+    if (j === undefined) return;
+    e.preventDefault();
+    tabs[j].focus();
+    setMode(PAGES[j]);
+  });
+});
+$('#optXray').addEventListener('change', e => { state.xray = e.target.checked; svg.classList.toggle('xray', state.xray); });
+$('#optSplit').addEventListener('change', e => { state.split = e.target.checked; update(); });
+$('#optFlow').addEventListener('change', e => { state.flow = e.target.checked; drawFlow(); });
+$('#fixBtn').addEventListener('click', () => { state.fixed = !state.fixed; pins.circuits = null; clearHover(); update(); revealBoard(); });
+$('#swBtn').addEventListener('click', toggleSwitch);
+
+const TRIES = [
+  ['a5', 'e5', 'a5 and e5'],
+  ['e5', 'f5', 'e5 and f5'],
+  ['a5', 'a6', 'a5 and a6'],
+  ['tp2', 'tp30', 'Both ends of the top + rail'],
+  ['tp10', 'tn10', 'Top + rail and top − rail'],
+  ['tn6', 'bn6', 'Top − rail and bottom − rail']
+];
+for (const [a, b, label] of TRIES) {
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'try'; btn.textContent = label;
+  btn.addEventListener('click', () => {
+    pins.explore = a; state.hover = b; state.hoverPart = null; state.kbd = false;
+    refresh();
+    if (singleCol.matches) revealBoard();
+    else $('#probe').scrollIntoView({block:'nearest', behavior:smooth()});
+  });
+  $('#tries').appendChild(btn);
+}
+
+/* ---------- Start ---------- */
+renderCircuitList();
+state.xray = $('#optXray').checked;
+state.split = $('#optSplit').checked;
+state.flow = $('#optFlow').checked;
+const wantPortrait = () => boardWrap.clientWidth > 0 && boardWrap.clientWidth < 560 && singleCol.matches;
+state.portrait = wantPortrait();
+$('#ptNote').hidden = !state.portrait;
+update();
+new ResizeObserver(() => {
+  if (!boardWrap.clientWidth) return;
+  const pt = wantPortrait();
+  if (pt === state.portrait) return;
+  state.portrait = pt;
+  requestAnimationFrame(() => { $('#ptNote').hidden = !state.portrait; build(); refresh(); });
+}).observe(boardWrap);
+})();
+</script>
+<script>
+/* ================= Worksheet tab: Ohm's law + resistor color code ================= */
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
+
+/* ---------- Numbers, units, parsing ---------- */
+const round = (x, sig = 3) => parseFloat(Number(x).toPrecision(sig));
+const PREFIXES = [[1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''], [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
+// Engineering notation with an SI prefix: 0.0191 A -> "19.1 mA"
+function eng(x, unit, sig = 3) {
+  if (!isFinite(x)) return '—';
+  const r = round(x, sig);
+  if (r === 0) return `0 ${unit}`;
+  const a = Math.abs(r);
+  for (const [f, p] of PREFIXES) if (a >= f) return `${round(r / f, sig)} ${p}${unit}`;
+  return `${round(r / 1e-12, sig)} p${unit}`;
+}
+const SUP = {'-':'⁻', 0:'⁰', 1:'¹', 2:'²', 3:'³', 4:'⁴', 5:'⁵', 6:'⁶', 7:'⁷', 8:'⁸', 9:'⁹'};
+// Plain SI number for the working: 0.0191, 470, 2500, or 1.5 × 10⁻⁶
+function plain(x, sig = 3) {
+  if (!isFinite(x)) return '?';
+  const r = round(x, sig);
+  if (r === 0) return '0';
+  const a = Math.abs(r);
+  if (a >= 1e-3 && a < 1e6) return String(r);
+  const e = Math.floor(Math.log10(a));
+  return `${round(r / 10 ** e, sig)} × 10${String(e).split('').map(c => SUP[c]).join('')}`;
+}
+const PREFIX_VAL = {p:1e-12, n:1e-9, u:1e-6, 'µ':1e-6, 'μ':1e-6, m:1e-3, k:1e3, K:1e3, M:1e6, G:1e9};
+// Accepts "4.7k", "4k7", "R47", "470R", "20 mA", "1.5V", "2e-3"
+function parseQty(str, unit) {
+  let s = String(str).normalize('NFKC').trim().replace(/\s+/g, '');
+  s = /^\d{1,3}(,\d{3})+(\.\d+)?/.test(s) ? s.replace(/,/g, '') : s.replace(/,/g, '.');
+  if (unit === 'Ω') s = s.replace(/(ohms?|Ω)$/i, '');
+  if (unit === 'V') s = s.replace(/(volts?|v)$/i, '');
+  if (unit === 'A') s = s.replace(/(amperes?|amps?|a)$/i, '');
+  if (!s) return null;
+  if (unit === 'Ω') {
+    const rkm = /^(\d*)([RKkMG])(\d+)$/.exec(s);
+    if (rkm && (rkm[1] || rkm[2] === 'R')) return {v:parseFloat(`${rkm[1] || '0'}.${rkm[3]}`) * {R:1, K:1e3, k:1e3, M:1e6, G:1e9}[rkm[2]], prefix:rkm[2]};
+    s = s.replace(/^(\d*\.?\d+)R$/, '$1');
+  }
+  const m = /^\+?((?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)([pnuµμmkKMG]?)$/.exec(s);
+  if (!m) return null;
+  const v = parseFloat(m[1]) * (m[2] ? PREFIX_VAL[m[2]] : 1);
+  return isFinite(v) ? {v, prefix:m[2]} : null;
+}
+
+/* ================= Part A: Ohm's law ================= */
+const Q = {
+  V:{name:'voltage', unit:'V', label:'Voltage'},
+  I:{name:'current', unit:'A', label:'Current'},
+  R:{name:'resistance', unit:'Ω', label:'Resistance'}
+};
+const FORMULA = {I:'I = V ÷ R', V:'V = I × R', R:'R = V ÷ I'};
+const E12 = [10,12,15,18,22,27,33,39,47,56,68,82];
+const E24 = [10,11,12,13,15,16,18,20,22,24,27,30,33,36,39,43,47,51,56,62,68,75,82,91];
+const E96 = [100,102,105,107,110,113,115,118,121,124,127,130,133,137,140,143,147,150,154,158,162,165,169,174,178,182,187,191,196,
+  200,205,210,215,221,226,232,237,243,249,255,261,267,274,280,287,294,301,309,316,324,332,340,348,357,365,374,383,392,402,412,422,432,442,453,464,475,487,499,
+  511,523,536,549,562,576,590,604,619,634,649,665,681,698,715,732,750,768,787,806,825,845,866,887,909,931,953,976];
+// Resistance slider walks through standard E24 values, 1 Ω to 1 MΩ
+const R_STEPS = [];
+for (let d = 0; d < 6; d++) for (const m of E24) R_STEPS.push(round(m / 10 * 10 ** d, 3));
+R_STEPS.push(1e6);
+
+const ohm = {find:'I', V:9, I:0, R:470, err:{}};
+const SLIDER = {
+  V:{min:0, max:300, to:v => Math.round(Math.min(30, Math.max(0, v)) * 10), from:s => s / 10},
+  I:{min:0, max:600, to:v => v > 0 ? Math.round(Math.min(600, Math.max(0, (Math.log10(v) + 6) * 100))) : 0, from:s => round(10 ** (s / 100 - 6), 3)},
+  R:{min:0, max:R_STEPS.length - 1,
+     to:v => { let b = 0; for (let i = 1; i < R_STEPS.length; i++) if (Math.abs(Math.log(R_STEPS[i] / v)) < Math.abs(Math.log(R_STEPS[b] / v))) b = i; return v > 0 ? b : 0; },
+     from:s => R_STEPS[s]}
+};
+
+function solve() {
+  const {find} = ohm;
+  if (find === 'I') ohm.I = ohm.R > 0 ? ohm.V / ohm.R : NaN;
+  else if (find === 'V') ohm.V = ohm.I * ohm.R;
+  else ohm.R = ohm.I > 0 ? ohm.V / ohm.I : NaN;
+}
+
+const rows = {};
+function buildOhm() {
+  const find = $('#ohFind');
+  for (const q of ['V', 'I', 'R']) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.q = q;
+    b.innerHTML = `${q} <span style="font-weight:500">· ${Q[q].name}</span>`;
+    b.addEventListener('click', () => setFind(q));
+    find.appendChild(b);
+  }
+  // The triangle: V on top, I × R below. Cover the one you want.
+  const tri = $('#ohTri');
+  tri.innerHTML = `
+    <defs><pattern id="ohHatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line class="hatch" x1="4" y1="0" x2="4" y2="8"/></pattern></defs>
+    <polygon class="reg" data-q="V" points="120,10 177.9,110 62.1,110" tabindex="0" role="button" aria-label="Find V, the voltage"/>
+    <polygon class="reg" data-q="I" points="62.1,110 120,110 120,202 8.9,202" tabindex="0" role="button" aria-label="Find I, the current"/>
+    <polygon class="reg" data-q="R" points="120,110 177.9,110 231.1,202 120,202" tabindex="0" role="button" aria-label="Find R, the resistance"/>
+    <polygon class="edge" points="120,10 231.1,202 8.9,202"/>
+    <line class="edge" x1="62.1" y1="110" x2="177.9" y2="110"/>
+    <line class="edge" x1="120" y1="110" x2="120" y2="202"/>
+    <text x="120" y="76">V</text><text x="80" y="160">I</text><text x="160" y="160">R</text>
+    <circle class="times-bg" cx="120" cy="160" r="11"/><text class="times" x="120" y="159">×</text>`;
+  for (const r of tri.querySelectorAll('.reg')) {
+    r.addEventListener('click', () => setFind(r.dataset.q));
+    r.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFind(r.dataset.q); } });
+  }
+  const wrap = $('#ohRows');
+  for (const q of ['V', 'I', 'R']) {
+    const row = document.createElement('div');
+    row.className = 'oh-row';
+    const id = 'oh' + q;
+    row.innerHTML = `<span class="oh-sym-l" aria-hidden="true">${q}</span>
+      <div class="oh-top"><input class="oh-in" id="${id}In" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="${id}Err">
+        <label class="oh-name" id="${id}Name" for="${id}In">${Q[q].label} (${Q[q].unit})</label><span class="oh-tag" id="${id}Tag"></span></div>
+      <input class="oh-range" id="${id}Range" type="range" min="${SLIDER[q].min}" max="${SLIDER[q].max}" step="1" aria-label="${Q[q].label} slider" autocomplete="off">
+      <p class="oh-err" id="${id}Err" hidden></p>`;
+    wrap.appendChild(row);
+    const inp = row.querySelector('.oh-in'), rng = row.querySelector('.oh-range'), err = row.querySelector('.oh-err');
+    rows[q] = {row, inp, rng, err};
+    inp.addEventListener('input', () => {
+      if (ohm.find === q) return;
+      const p = parseQty(inp.value, Q[q].unit);
+      let msg = '';
+      if (!p) msg = `Type a number, like ${{V:'9 or 1.5 V', I:'20 mA or 0.02', R:'470, 4.7k or 4k7'}[q]}.`;
+      else if (q === 'R' && !(p.v > 0)) msg = 'Resistance must be more than 0 Ω.';
+      if (p && !msg && q === 'R' && p.prefix === 'm') msg = `That's ${eng(p.v, 'Ω')}. For mega-ohms, use a capital M.`;
+      if (p && q === 'I' && p.prefix === 'M') msg = `That's ${eng(p.v, 'A')}. For milliamps, use a small m, like 20 mA.`;
+      ohm.err[q] = !p || (q === 'R' && !(p.v > 0));
+      inp.setAttribute('aria-invalid', String(ohm.err[q]));
+      err.hidden = !msg; err.textContent = msg;
+      if (ohm.err[q]) return;
+      ohm[q] = p.v;
+      rng.value = SLIDER[q].to(p.v);
+      solve(); renderOhm(q);
+    });
+    inp.addEventListener('change', () => { if (ohm.find !== q && !ohm.err[q]) inp.value = eng(ohm[q], Q[q].unit, 4); });
+    rng.addEventListener('input', () => {
+      ohm[q] = SLIDER[q].from(+rng.value);
+      ohm.err[q] = false; inp.setAttribute('aria-invalid', 'false'); err.hidden = true;
+      inp.value = eng(ohm[q], Q[q].unit, 4);
+      rng.setAttribute('aria-valuetext', inp.value);
+      solve(); renderOhm(q);
+    });
+  }
+  const list = $('#ohProbs');
+  PROBLEMS.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<div class="oh-prob"><span id="ohP${i}">${esc(p.text)}</span><button type="button" aria-label="Load problem ${i + 1}" aria-describedby="ohP${i}">Load it</button></div>`;
+    li.querySelector('button').addEventListener('click', () => loadProblem(p));
+    list.appendChild(li);
+  });
+}
+const PROBLEMS = [
+  {text:'A 9 V battery is connected across a 470 Ω resistor. What current flows?', find:'I', V:9, R:470},
+  {text:'20 mA flows through a 220 Ω resistor. What is the voltage across it?', find:'V', I:0.02, R:220},
+  {text:'A 5 V supply pushes 2 mA through a resistor. What is its resistance?', find:'R', V:5, I:0.002},
+  {text:'A 12 V supply is connected across a 1.5 kΩ resistor. What current flows?', find:'I', V:12, R:1500}
+];
+function loadProblem(p) {
+  ohm.find = p.find;
+  for (const q of ['V', 'I', 'R']) if (q !== p.find) { ohm[q] = p[q]; ohm.err[q] = false; }
+  solve(); renderOhm();
+  $('#ohWork').scrollIntoView({block:'nearest', behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+}
+function setFind(q) {
+  if (ohm.find === q) return;
+  // The old unknown becomes a known, keeping its computed value when it's usable
+  const old = ohm.find;
+  if (!isFinite(ohm[old]) || ohm[old] < 0 || (old === 'R' && !(ohm[old] > 0))) ohm[old] = {V:9, I:0.01, R:470}[old];
+  ohm[old] = round(ohm[old], 4);
+  ohm.find = q;
+  for (const k of ['V', 'I', 'R']) ohm.err[k] = false;
+  solve(); renderOhm();
+}
+// Called by Part B's "Use this resistor" button
+function useResistor(r) {
+  if (ohm.find === 'R') ohm.find = 'I';
+  ohm.R = r; ohm.err.R = false;
+  solve(); renderOhm();
+}
+
+function renderOhm(typing) {
+  const {find} = ohm;
+  for (const b of $('#ohFind').children) b.setAttribute('aria-pressed', String(b.dataset.q === find));
+  for (const r of $('#ohTri').querySelectorAll('.reg')) { r.classList.toggle('on', r.dataset.q === find); r.setAttribute('aria-pressed', String(r.dataset.q === find)); }
+  const rest = {I:['V over R', 'V ÷ R'], V:['I and R side by side', 'I × R'], R:['V over I', 'V ÷ I']}[find];
+  $('#ohCover').innerHTML = `Cover <b>${find}</b> with your finger. What's left is ${rest[0]}, so<br><span class="hand">${find} = ${rest[1]}</span>`;
+  for (const q of ['V', 'I', 'R']) {
+    const {row, inp, rng, err} = rows[q];
+    const unknown = q === find;
+    row.classList.toggle('unknown', unknown);
+    inp.readOnly = unknown;
+    rng.disabled = unknown;
+    $(`#oh${q}Tag`).textContent = unknown ? 'Answer' : '';
+    if (q !== typing) {
+      inp.value = isFinite(ohm[q]) ? eng(ohm[q], Q[q].unit, unknown ? 3 : 4) : '—';
+      err.hidden = true; ohm.err[q] = false; inp.setAttribute('aria-invalid', 'false');
+    }
+    if (q !== typing || unknown) rng.value = isFinite(ohm[q]) ? SLIDER[q].to(ohm[q]) : 0;
+    rng.setAttribute('aria-valuetext', isFinite(ohm[q]) ? eng(ohm[q], Q[q].unit, 4) : 'not set');
+  }
+  drawSchematic();
+  renderWork();
+}
+
+function renderWork() {
+  const {find, V, I, R} = ohm;
+  const lines = [];
+  const add = (t, cls = '') => lines.push(`<div class="${cls}">${t}</div>`);
+  add(`Find the ${Q[find].name}, ${find}.`, 'wl-note');
+  add(FORMULA[find]);
+  for (const q of ['V', 'I', 'R']) {
+    if (q === find) continue;
+    const shown = eng(ohm[q], Q[q].unit, 4), base = `${plain(ohm[q], 4)} ${Q[q].unit}`;
+    if (shown !== base) add(`${q} = ${shown} = ${base}`, 'wl-conv');
+  }
+  const b = q => { const t = plain(ohm[q], 4), u = Q[q].unit; return t.includes('×') ? `(${t} ${u})` : `${t} ${u}`; };
+  if (find === 'R' && !(I > 0)) {
+    add('R = V ÷ 0 can\'t be worked out.');
+    if (V > 0) add(`With ${eng(V, 'V')} across it and no current, R is infinitely large: the circuit is open (there's a break).`, 'wl-note');
+    else add('With no voltage and no current, Ohm\'s law can\'t tell you R: it could be any value.', 'wl-note');
+  } else if (!isFinite(ohm[find])) {
+    add(`${find} can't be worked out with these values.`);
+  } else {
+    const ans = ohm[find], unit = Q[find].unit;
+    add(find === 'V' ? `V = ${b('I')} × ${b('R')}` : find === 'I' ? `I = ${b('V')} ÷ ${b('R')}` : `R = ${b('V')} ÷ ${b('I')}`);
+    const basic = `${plain(ans)} ${unit}`, nice = eng(ans, unit);
+    if (basic === nice) add(`${find} = <span class="hl">${nice}</span>`);
+    else { add(`${find} = ${basic}`); add(`${find} = <span class="hl">${nice}</span>`); }
+    if (find === 'R' && ohm.R === 0) add('0 Ω is a plain wire: a short circuit.', 'wl-note');
+    if (find === 'V' && V > 30) add('That\'s more than a typical bench supply gives (0–30 V). Check your numbers.', 'wl-warn');
+    const P = V * I;
+    if (isFinite(P) && P > 0.25) add(`Power: P = V × I = ${eng(P, 'W')}. A standard ¼ W breadboard resistor would overheat.`, 'wl-warn');
+  }
+  $('#ohWork').innerHTML = lines.join('');
+  announce('#ohLive', isFinite(ohm[find]) ? `${find} = ${eng(ohm[find], Q[find].unit)}` : `${find} can't be worked out`);
+}
+
+function drawSchematic() {
+  const {find, V, I, R} = ohm;
+  const lab = (q, x, y, anchor) => {
+    const val = ohm[q];
+    const txt = `${q} = ${isFinite(val) ? eng(val, Q[q].unit, q === find ? 3 : 4) : '?'}`;
+    const w = txt.length * 10.6 + 12;
+    const x0 = anchor === 'end' ? x - w + 5 : anchor === 'middle' ? x - w / 2 : x - 5;
+    return (q === find ? `<rect class="oh-hl" data-anchor="${anchor}" data-x="${x}" x="${x0}" y="${y - 3}" width="${w}" height="16" rx="3"/>` : '') +
+      `<text class="oh-lab"${q === find ? ' data-hl="1"' : ''} x="${x}" y="${y}" text-anchor="${anchor}">${esc(txt)}</text>`;
+  };
+  // Zigzag resistor on the top wire, from x=170 to x=250
+  let zz = 'M150,50 L170,50';
+  for (let k = 0; k < 6; k++) zz += ` L${176.7 + k * 13.3},${k % 2 ? 62 : 38}`;
+  zz += ' L250,50 L270,50';
+  const flowing = isFinite(I) && I > 0;
+  const norm = flowing ? Math.max(0, Math.min(1, (Math.log10(I) + 6) / 6)) : 0;
+  const w = 1.5 + 5.5 * norm, ah = 6 + 7 * norm;
+  const arrow = (x, y, dir) => {
+    const [dx, dy] = {up:[0, -1], down:[0, 1], left:[-1, 0], right:[1, 0]}[dir];
+    const px = -dy, py = dx;
+    return `<polygon class="oh-arrow" points="${x + dx * ah},${y + dy * ah} ${x - dx * ah + px * ah * 0.8},${y - dy * ah + py * ah * 0.8} ${x - dx * ah - px * ah * 0.8},${y - dy * ah - py * ah * 0.8}"/>`;
+  };
+  const dur = flowing ? (2.2 - 1.8 * norm).toFixed(2) : 1;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  $('#ohSchem').innerHTML = `
+    ${flowing ? `<path class="oh-flow" d="M78,190 L78,68 L342,68 L342,192 L82,192" stroke-width="${w.toFixed(1)}" style="animation-duration:${reduce ? 0 : dur}s"/>
+      ${arrow(78, 90, 'up')}${arrow(210, 68, 'right')}${arrow(342, 88, 'down')}${arrow(210, 192, 'left')}` : ''}
+    <path class="oh-wire" d="M60,118 L60,50 L150,50 M270,50 L360,50 L360,108 M360,152 L360,210 L60,210 L60,132"/>
+    <path class="oh-wire" d="${zz}"/>
+    <line class="oh-plate" x1="36" y1="118" x2="84" y2="118" stroke-width="3"/>
+    <line class="oh-plate" x1="47" y1="132" x2="73" y2="132" stroke-width="6"/>
+    <text class="oh-lab small" x="92" y="108">+</text>
+    <circle class="oh-meter" cx="360" cy="130" r="22"/>
+    <text class="oh-sym" x="360" y="131">A</text>
+    ${lab('R', 210, 20, 'middle')}
+    ${lab('V', 98, 150, 'start')}
+    ${lab('I', 326, 112, 'end')}
+    ${flowing ? '' : `<text class="oh-lab small" x="210" y="235" text-anchor="middle">No current is flowing.</text>`}`;
+  const t = $('#ohSchem text[data-hl]'), hl = $('#ohSchem .oh-hl');
+  const tw = t && t.getComputedTextLength ? t.getComputedTextLength() : 0;
+  if (hl && tw > 0) {
+    const w = tw + 10, x = +hl.dataset.x, a = hl.dataset.anchor;
+    hl.setAttribute('width', w);
+    hl.setAttribute('x', a === 'end' ? x - tw - 5 : a === 'middle' ? x - w / 2 : x - 5);
+  }
+}
+
+/* ================= Part B: resistor color code ================= */
+const COLORS = [
+  {name:'black',  hex:'#1B1B1B', digit:0, mult:1,    tol:null},
+  {name:'brown',  hex:'#7B4A22', digit:1, mult:10,   tol:1},
+  {name:'red',    hex:'#D22B2B', digit:2, mult:100,  tol:2},
+  {name:'orange', hex:'#F07C1B', digit:3, mult:1e3,  tol:null},
+  {name:'yellow', hex:'#F2CB1D', digit:4, mult:1e4,  tol:null},
+  {name:'green',  hex:'#2E9B4A', digit:5, mult:1e5,  tol:0.5},
+  {name:'blue',   hex:'#2F66CC', digit:6, mult:1e6,  tol:0.25},
+  {name:'violet', hex:'#7E47A8', digit:7, mult:1e7,  tol:0.1},
+  {name:'grey',   hex:'#8E9092', digit:8, mult:1e8,  tol:0.05},
+  {name:'white',  hex:'#F4F4F0', digit:9, mult:1e9,  tol:null},
+  {name:'gold',   hex:'#C9A13B', digit:null, mult:0.1,  tol:5},
+  {name:'silver', hex:'#B9BEC4', digit:null, mult:0.01, tol:10}
+];
+const C = Object.fromEntries(COLORS.map(c => [c.name, c]));
+const ROLE = {4:['first digit', 'second digit', 'multiplier', 'tolerance'], 5:['first digit', 'second digit', 'third digit', 'multiplier', 'tolerance']};
+const BAND_X = {4:[165, 240, 280, 440], 5:[160, 235, 270, 305, 440]};
+const BODY = 'M150,42 C132,42 128,58 128,80 C128,102 132,118 150,118 L206,118 C216,118 220,110 232,110 L368,110 C380,110 384,118 394,118 L450,118 C468,118 472,102 472,80 C472,58 468,42 450,42 L394,42 C384,42 380,50 368,50 L232,50 C220,50 216,42 206,42 Z';
+const multText = m => m >= 1e9 ? `×${m / 1e9} G` : m >= 1e6 ? `×${m / 1e6} M` : m >= 1e3 ? `×${m / 1e3} k` : `×${m}`;
+const tolText = t => `±${t}%`;
+const fmtR = (v, sig = 3) => v > 0 && v < 1 ? `${round(v, sig)} Ω` : eng(v, 'Ω', sig);
+const multStr = m => m < 1 ? `${m} Ω` : eng(m, 'Ω');
+const roleOf = (n, i) => i < n - 2 ? 'digit' : i === n - 2 ? 'mult' : 'tol';
+function allowed(n, i) {
+  const r = roleOf(n, i);
+  if (r === 'digit') return COLORS.filter(c => c.digit != null && !(i === 0 && c.digit === 0));
+  if (r === 'mult') return COLORS.filter(c => c.mult != null);
+  return COLORS.filter(c => c.tol != null);
+}
+function meaning(n, i, c) {
+  const r = roleOf(n, i);
+  return r === 'digit' ? String(C[c].digit) : r === 'mult' ? multText(C[c].mult) : tolText(C[c].tol);
+}
+function readBands(n, bands) {
+  const digits = bands.slice(0, n - 2).map(c => C[c].digit).join('');
+  const mult = C[bands[n - 2]].mult, tol = C[bands[n - 1]].tol;
+  return {ohms:round(parseInt(digits, 10) * mult, 6), digits, mult, tol};
+}
+// Value -> bands. Returns the bands, and whether the value fits exactly.
+function toBands(v, n) {
+  const sig = n - 2;
+  if (!(v > 0)) return {err:'Type a value above 0 Ω.'};
+  let e = Math.floor(Math.log10(v)) - (sig - 1);
+  let d = Math.round(v / 10 ** e);
+  if (d >= 10 ** sig) { e++; d = Math.round(v / 10 ** e); }
+  const exact = Math.abs(d * 10 ** e - v) <= v * 1e-9;
+  const mc = COLORS.find(c => Math.abs(Math.log10(c.mult) - e) < 1e-9);
+  if (!mc) return {err:e < 0 ? `That's too small for a ${n}-band code.` : `That's too large for a ${n}-band code.`};
+  const digs = String(d).split('').map(Number);
+  return {bands:digs.map(x => COLORS.find(c => c.digit === x).name).concat(mc.name), exact, rounded:d * 10 ** e};
+}
+// Standard (preferred) values: E12/E24 for 2 digits, E24/E96 for 3
+function seriesInfo(ohms, n) {
+  const sig = n - 2;
+  const e = Math.floor(Math.log10(ohms)) - (sig - 1);
+  const m = Math.round(ohms / 10 ** e);
+  const names = [];
+  if (sig === 2) { if (E12.includes(m)) names.push('E12'); if (E24.includes(m)) names.push('E24'); }
+  else { if (m % 10 === 0 && E24.includes(m / 10)) names.push('E24'); if (E96.includes(m)) names.push('E96'); }
+  if (names.length) return {ok:true, text:`A standard value (in the ${names.join(' and ')} series).`};
+  const base = sig === 2 ? E24 : [...new Set([...E96, ...E24.map(x => x * 10)])].sort((a, b) => a - b);
+  const cands = [];
+  for (const k of [-1, 0, 1]) for (const b of base) cands.push(b * 10 ** (e + k));
+  const lo = Math.max(...cands.filter(c => c < ohms)), hi = Math.min(...cands.filter(c => c > ohms));
+  return {ok:false, text:`Not a standard value. The nearest you can buy are ${eng(lo, 'Ω')} and ${eng(hi, 'Ω')}.`};
+}
+
+function resistorSVG(id, n, bands, opts = {}) {
+  const xs = BAND_X[n];
+  let bandsSvg = '', extra = '';
+  xs.forEach((x, i) => {
+    const c = C[bands[i]];
+    bandsSvg += `<rect x="${x - 10}" y="20" width="20" height="120" fill="${c.hex}"/>`;
+    if (opts.interactive) {
+      if (i === opts.active) extra += `<rect class="cc-sel" x="${x - 15}" y="27" width="30" height="106" rx="4"/><path class="cc-caret" d="M${x - 9},152 L${x + 9},152 L${x},141 Z"/>`;
+      extra += `<text class="cc-num" x="${x}" y="17">${i + 1}</text>`;
+      const hw = n === 4 ? 40 : 34;
+      extra += `<rect class="cc-hit" data-band="${i}" x="${x - hw / 2}" y="22" width="${hw}" height="116" rx="4" tabindex="0" role="button"
+        aria-pressed="${i === opts.active}" aria-label="Band ${i + 1}, ${ROLE[n][i]}: ${c.name}, ${meaning(n, i, bands[i])}. Up and down arrows change the color."/>`;
+    }
+  });
+  return `<svg class="res-svg" viewBox="0 0 600 160" ${opts.interactive ? 'role="group" aria-label="Resistor bands"' : `role="img" aria-label="${esc(opts.label || 'Resistor')}"`}>
+    <defs><clipPath id="${id}Clip"><path d="${BODY}"/></clipPath>
+      <linearGradient id="${id}Shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient></defs>
+    <line class="res-lead" x1="8" y1="80" x2="592" y2="80"/>
+    <path class="res-body${n}" d="${BODY}"/>
+    <g clip-path="url(#${id}Clip)">${bandsSvg}<path d="${BODY}" fill="url(#${id}Shade)"/></g>
+    <path class="res-outline" d="${BODY}"/>${extra}</svg>`;
+}
+
+const cc = {n:4, bands:['yellow', 'violet', 'brown', 'gold'], active:0};
+function setBandCount(n) {
+  if (cc.n === n) return;
+  const {ohms} = readBands(cc.n, cc.bands);
+  const t = toBands(ohms, n);
+  if (!t.bands) {
+    $('#ccMsg').textContent = `${fmtR(ohms)} can't be shown with ${n} bands. ${t.err}`;
+    $('#ccMsg').className = 'cc-msg warn';
+    return;
+  }
+  const role = roleOf(cc.n, cc.active);
+  cc.active = role === 'tol' ? n - 1 : role === 'mult' ? n - 2 : Math.min(cc.active, n - 3);
+  cc.bands = [...t.bands, cc.bands[cc.n - 1]];
+  cc.n = n;
+  $('#ccIn').value = fmtR(readBands(n, cc.bands).ohms);
+  $('#ccMsg').textContent = !t.exact ? `Rounded to ${fmtR(t.rounded)}: a ${n}-band code only has ${n - 2} digits.` : 'Try 4.7k, 220, 1M or 4k7.';
+  $('#ccMsg').className = 'cc-msg' + (!t.exact ? ' warn' : '');
+  $('#cc5').hidden = true;
+  renderCC();
+}
+function setBand(i, color, keepFocus) {
+  cc.bands[i] = color;
+  $('#ccIn').value = fmtR(readBands(cc.n, cc.bands).ohms);
+  $('#ccMsg').textContent = 'Try 4.7k, 220, 1M or 4k7.'; $('#ccMsg').className = 'cc-msg'; $('#cc5').hidden = true;
+  renderCC(keepFocus);
+}
+function renderCC(focusBand) {
+  const {n, bands, active} = cc;
+  for (const b of $('#ccN').children) b.setAttribute('aria-pressed', String(+b.dataset.n === n));
+  $('#ccRes').innerHTML = resistorSVG('cc', n, bands, {interactive:true, active});
+  for (const h of $('#ccRes').querySelectorAll('.cc-hit')) {
+    const i = +h.dataset.band;
+    h.addEventListener('click', () => { cc.active = i; renderCC(i); });
+    h.addEventListener('keydown', e => {
+      const opts = allowed(n, i).map(c => c.name);
+      let k = opts.indexOf(bands[i]);
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        k = (k + (e.key === 'ArrowUp' ? 1 : -1) + opts.length) % opts.length;
+        cc.active = i; setBand(i, opts[k], i);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        cc.active = Math.max(0, Math.min(n - 1, i + (e.key === 'ArrowRight' ? 1 : -1))); renderCC(cc.active);
+      } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cc.active = i; renderCC(i); }
+    });
+  }
+  if (focusBand != null) $(`#ccRes .cc-hit[data-band="${focusBand}"]`)?.focus();
+  // Palette for the selected band
+  const pal = $('#ccPal');
+  pal.innerHTML = `<p class="ws-label" style="margin:0">Band ${active + 1} · ${ROLE[n][active]}</p><div class="cc-sws"></div>`;
+  const sws = pal.querySelector('.cc-sws');
+  for (const c of allowed(n, active)) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cc-sw';
+    b.setAttribute('aria-pressed', String(c.name === bands[active]));
+    b.innerHTML = `<span class="cc-swc" style="background:${c.hex}"></span><span>${c.name}</span><b>${meaning(n, active, c.name)}</b>`;
+    b.addEventListener('click', () => { setBand(active, c.name); $('#ccPal .cc-sw[aria-pressed="true"]')?.focus(); });
+    sws.appendChild(b);
+  }
+  // Reading
+  const r = readBands(n, bands);
+  const lo = r.ohms * (1 - r.tol / 100), hi = r.ohms * (1 + r.tol / 100);
+  const s = seriesInfo(r.ohms, n);
+  $('#ccRead').innerHTML = `<p class="ws-label">Value</p>
+    <p class="cc-big hand"><span class="hl">${fmtR(r.ohms)}</span> ${tolText(r.tol)}</p>
+    <p class="cc-work hand">${r.digits.split('').join(' ')} × ${multStr(r.mult)} = ${fmtR(r.ohms)}</p>
+    <p>${bands.slice(0, n - 2).map(c => `${c} = ${C[c].digit}`).join(', ')}; ${bands[n - 2]} = ${multText(r.mult)}; ${bands[n - 1]} = ${tolText(r.tol)}.</p>
+    <p>Any resistor from ${fmtR(lo, 5)} to ${fmtR(hi, 5)} is within tolerance.</p>
+    <p class="cc-std ${s.ok ? 'ok' : 'no'}">${s.text}</p>`;
+  announce('#ccLive', `${fmtR(r.ohms)} ${tolText(r.tol)}`);
+}
+function buildCC() {
+  for (const n of [4, 5]) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.n = n; b.textContent = `${n} bands`;
+    b.addEventListener('click', () => setBandCount(n));
+    $('#ccN').appendChild(b);
+  }
+  let typed = null;
+  $('#ccIn').addEventListener('input', () => {
+    const msg = $('#ccMsg'), five = $('#cc5');
+    five.hidden = true; msg.className = 'cc-msg'; typed = null;
+    const p = parseQty($('#ccIn').value, 'Ω');
+    if (!p) { msg.textContent = 'Type a value like 4.7k, 220, 1M or 4k7.'; msg.className = 'cc-msg warn'; return; }
+    typed = p.v;
+    const mega = p.prefix === 'm' ? ` That's ${fmtR(p.v)}. For mega-ohms, use a capital M.` : '';
+    const t = toBands(p.v, cc.n);
+    if (t.err) { msg.textContent = (t.err + mega).trim(); msg.className = 'cc-msg warn'; return; }
+    cc.bands = [...t.bands, cc.bands[cc.n - 1]];
+    if (t.exact) { msg.textContent = mega ? mega.trim() : `Bands for ${fmtR(p.v, 4)}.`; if (mega) msg.className = 'cc-msg warn'; }
+    else if (cc.n === 4 && toBands(p.v, 5).exact) {
+      msg.textContent = `${fmtR(p.v, 4)} needs three digits, so it needs a 5-band resistor. Showing the nearest 4-band value, ${fmtR(t.rounded)}.`;
+      msg.className = 'cc-msg warn'; five.hidden = false;
+    } else { msg.textContent = `Rounded to ${fmtR(t.rounded)}: a ${cc.n}-band code only has ${cc.n - 2} digits.`; msg.className = 'cc-msg warn'; }
+    renderCC();
+  });
+  $('#ccIn').addEventListener('change', () => { if ($('#cc5').hidden) $('#ccIn').value = fmtR(readBands(cc.n, cc.bands).ohms, 4); });
+  $('#cc5').addEventListener('click', () => {
+    const v = typed;
+    setBandCount(5);
+    const t = v ? toBands(v, 5) : {};
+    if (t.bands) { cc.bands = [...t.bands, cc.bands[4]]; $('#ccIn').value = fmtR(v, 4); $('#ccMsg').textContent = `Bands for ${fmtR(v, 4)}.`; $('#ccMsg').className = 'cc-msg'; renderCC(); }
+    $('#ccIn').focus();
+  });
+  $('#ccUse').addEventListener('click', () => {
+    useResistor(readBands(cc.n, cc.bands).ohms);
+    $('#partA').scrollIntoView({block:'start', behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+    rows.R.inp.focus({preventScroll:true});
+  });
+}
+
+/* ================= Part C: practice quiz ================= */
+const quiz = {kind:'4', q:null, done:false, right:0, total:0, streak:0};
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function makeQuestion() {
+  const n = quiz.kind === 'both' ? pick([4, 5]) : +quiz.kind;
+  let ohms, tolName;
+  if (n === 4) { ohms = pick(E24) * 10 ** pick([-1, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4, 5]); tolName = pick(['gold', 'gold', 'gold', 'silver', 'brown', 'red']); }
+  else { ohms = pick(Math.random() < 0.5 ? E96 : E24.map(x => x * 10)) * 10 ** pick([-1, 0, 0, 1, 1, 2, 2, 3]); tolName = pick(['brown', 'brown', 'brown', 'red', 'green', 'blue', 'violet']); }
+  ohms = round(ohms, 6);
+  const bands = [...toBands(ohms, n).bands, tolName];
+  // Wrong answers built from the classic mistakes
+  const r = readBands(n, bands);
+  const cands = [];
+  const add = (v, why, kind = 'other') => { v = round(v, 6); if (v > 0 && Math.abs(v - ohms) > ohms * 1e-9 && !cands.some(c => Math.abs(c.v - v) <= v * 1e-9)) cands.push({v, why, kind}); };
+  const mc = bands[n - 2];
+  add(ohms * 10, `That's one step too big on the multiplier: ${mc} means ${multText(r.mult)}.`, 'mult');
+  add(ohms / 10, `That's one step too small on the multiplier: ${mc} means ${multText(r.mult)}.`, 'mult');
+  const ds = r.digits.split('');
+  if (ds[1] !== ds[0] && ds[1] !== '0') add(parseInt([ds[1], ds[0], ...ds.slice(2)].join(''), 10) * r.mult, 'The first two digits are swapped. The band nearest the end is the first digit; the next band is the second.');
+  const rev = [...bands].reverse();
+  const revOk = rev.slice(0, n - 2).every((c, i) => C[c].digit != null && !(i === 0 && C[c].digit === 0)) && C[rev[n - 2]].mult != null;
+  if (revOk) add(parseInt(rev.slice(0, n - 2).map(c => C[c].digit).join(''), 10) * C[rev[n - 2]].mult, `That's reading from the wrong end. Start at the end away from the ${tolName} tolerance band.`);
+  const NEAR = {red:'orange', orange:'red', brown:'red', blue:'violet', violet:'blue', grey:'white', white:'grey', yellow:'orange'};
+  for (let i = 0; i < n - 2; i++) {
+    const alt = NEAR[bands[i]];
+    if (alt && !(i === 0 && C[alt].digit === 0)) {
+      const d2 = [...ds]; d2[i] = String(C[alt].digit);
+      add(parseInt(d2.join(''), 10) * r.mult, `Check the colors: ${bands[i]} (${C[bands[i]].digit}) is easy to mistake for ${alt} (${C[alt].digit}).`);
+    }
+  }
+  add(ohms * 100, `That's two steps too big on the multiplier: ${mc} means ${multText(r.mult)}.`, 'mult');
+  add(ohms / 100, `That's two steps too small on the multiplier: ${mc} means ${multText(r.mult)}.`, 'mult');
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  // One multiplier slip, then the other kinds of mistake, topped up with more multiplier slips if needed
+  const mults = shuffle(cands.filter(c => c.kind === 'mult').slice(0, 2)).concat(cands.filter(c => c.kind === 'mult').slice(2));
+  const others = shuffle(cands.filter(c => c.kind !== 'mult'));
+  const wrong = [mults.shift(), ...others.slice(0, 2)];
+  while (wrong.length < 3) wrong.push(mults.shift());
+  const opts = shuffle([{v:ohms, right:true}, ...wrong]);
+  quiz.q = {n, bands, ohms, r, opts};
+  quiz.done = false;
+}
+function renderQuiz() {
+  const {q} = quiz;
+  for (const b of $('#qzKind').children) b.setAttribute('aria-pressed', String(b.dataset.k === quiz.kind));
+  const sc = quiz.total ? `Score ${quiz.right} of ${quiz.total}${quiz.streak > 1 ? ` · ${quiz.streak} in a row` : ''}` : 'No answers yet';
+  if ($('#qzScore').textContent !== sc) $('#qzScore').textContent = sc;
+  $('#qzRes').innerHTML = resistorSVG('qz', q.n, q.bands, {label:`A ${q.n}-band resistor: ${q.bands.join(', ')}`});
+  const opts = $('#qzOpts');
+  opts.innerHTML = '';
+  q.opts.forEach(o => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'qz-opt';
+    b.textContent = fmtR(o.v);
+    b.addEventListener('click', () => answer(o, b));
+    opts.appendChild(b);
+  });
+  $('#qzFb').innerHTML = '';
+}
+function answer(o, btn) {
+  if (quiz.done) return;
+  quiz.done = true;
+  quiz.total++;
+  if (o.right) { quiz.right++; quiz.streak++; } else quiz.streak = 0;
+  const {q} = quiz;
+  [...$('#qzOpts').children].forEach((b, i) => {
+    b.disabled = true;
+    if (q.opts[i].right) { b.classList.add('right'); b.textContent = '✓ ' + b.textContent; }
+  });
+  if (!o.right) btn.classList.add('wrong');
+  const n = q.n, r = q.r;
+  const how = `${q.bands.slice(0, n - 2).map(c => `${c} ${C[c].digit}`).join(', ')}, ${q.bands[n - 2]} ${multText(r.mult)} → ${r.digits.split('').join(' ')} × ${multStr(r.mult)} = ${fmtR(q.ohms)}, ${q.bands[n - 1]} ${tolText(r.tol)}`;
+  $('#qzFb').innerHTML = `<p class="res ${o.right ? 'ok' : 'no'}">${o.right ? 'Correct!' : `Not quite. It's ${fmtR(q.ohms)}.`}</p>
+    ${o.right ? '' : `<p>${esc(o.why)}</p>`}<p class="hand">${esc(how)}</p>`;
+  $('#qzScore').textContent = `Score ${quiz.right} of ${quiz.total}${quiz.streak > 1 ? ` · ${quiz.streak} in a row` : ''}`;
+  $('#qzNext').focus({preventScroll:true});
+}
+function buildQuiz() {
+  for (const [k, label] of [['4', '4 bands'], ['5', '5 bands'], ['both', 'Both']]) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.k = k; b.textContent = label;
+    b.addEventListener('click', () => { if (quiz.kind === k) return; quiz.kind = k; makeQuestion(); renderQuiz(); });
+    $('#qzKind').appendChild(b);
+  }
+  $('#qzNext').addEventListener('click', () => { makeQuestion(); renderQuiz(); });
+}
+
+/* ---------- Start ---------- */
+function announce(sel, text) {
+  clearTimeout(announce[sel]);
+  announce[sel] = setTimeout(() => { const el = $(sel); if (el && el.textContent !== text) el.textContent = text; }, 450);
+}
+document.addEventListener('ws:show', drawSchematic);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawSchematic);
+buildOhm();
+solve();
+renderOhm();
+buildCC();
+renderCC();
+buildQuiz();
+makeQuestion();
+renderQuiz();
+
+})();
+</script>
+</body>
+</html>
