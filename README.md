@@ -19,7 +19,7 @@ Everything is one static page (`index.html`) with no build step or dependencies.
 - A small DC solver drives LED brightness, a virtual voltmeter, part currents and animated current flow.
 
 **Ohm's law & color code** (worksheet style)
-- **Part A:** a V = I × R solver with a live circuit diagram and step-by-step working.
+- **Part A:** a V = I × R solver with a live circuit diagram and step-by-step working, plus a water picture of the same circuit: tank height is like voltage, the tap is like resistance and the flow is like current. Students can drag the water level and the tap.
 - **Part B:** a clickable 4- and 5-band resistor that works in both directions (bands to value, and value to bands).
 - **Part C:** a practice quiz whose wrong answers are real student mistakes.
 
